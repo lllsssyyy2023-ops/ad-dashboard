@@ -54,14 +54,18 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);colo
 .cal-nav button{width:clamp(24px,2vh,32px);height:clamp(24px,2vh,32px);border-radius:8px;border:1px solid var(--bdr2);background:var(--sur);cursor:pointer;font-size:clamp(14px,1.4vw,20px);color:var(--tx2);display:flex;align-items:center;justify-content:center;transition:.12s}
 .cal-nav button:hover{background:var(--sur2)}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--bdr);border:1px solid var(--bdr);border-radius:var(--r-lg);overflow:hidden;flex:1}
-.dh{background:var(--sur2);text-align:center;font-size:clamp(9px,.8vw,12px);font-weight:700;color:var(--tx3);padding:clamp(4px,.5vh,8px) 0;letter-spacing:.04em}
+.dh{background:var(--sur2);text-align:center;font-size:clamp(8px,.7vw,11px);font-weight:700;color:var(--tx3);padding:0;height:clamp(16px,1.6vh,22px);letter-spacing:.04em;line-height:1;display:flex;align-items:center;justify-content:center}
 .dh.sun{color:#EF4444}.dh.sat{color:var(--blue)}
 .dc{background:var(--sur);padding:clamp(4px,.4vh,7px) clamp(4px,.4vw,6px);padding-bottom:clamp(20px,2.5vh,34px);cursor:pointer;transition:background .1s;position:relative;overflow:hidden}
 .dc:hover{background:#FAFAF8}
 .dc.other .dn{color:var(--tx3)}.dc.other{background:#FAFAF9}
-.dc.tod{background:var(--blue-bg)}.dc.tod .dn{color:var(--blue);font-weight:700}
+.dc.tod{background:var(--blue-bg)}.dc.tod .dn:not(.sat):not(.sun):not(.hol){color:var(--blue);font-weight:700}.dc.tod .dn{font-weight:700}
 .dc.sel{outline:2px solid var(--blue);outline-offset:-2px}
 .dn{font-size:clamp(10px,.9vw,14px);font-weight:600;color:var(--tx2);margin-bottom:2px}
+.dn.sat{color:var(--blue)}
+.dn.sun{color:#EF4444}
+.dn.hol{color:#EF4444}
+.hol-label{font-size:clamp(7px,.65vw,9px);color:#EF4444;font-weight:600;margin-bottom:1px;line-height:1.2}
 .chip{font-size:clamp(8px,.7vw,11px);padding:1px 4px;border-radius:3px;margin-bottom:1px;display:flex;align-items:center;gap:2px;overflow:hidden;line-height:1.4;font-weight:500}
 .chip-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 .chip-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
@@ -155,8 +159,7 @@ textarea.fc{min-height:64px;resize:vertical}
 .todo-add-btn{font-size:clamp(9px,.8vw,11px);padding:2px 8px;border-radius:6px;border:1px solid var(--bdr2);background:var(--sur);color:var(--blue);cursor:pointer;font-weight:600}
 .todo-item{display:flex;align-items:flex-start;gap:7px;padding:6px 4px;border-bottom:1px solid var(--bdr);position:relative}
 .todo-item:last-child{border-bottom:none}
-.todo-item:hover .todo-del{opacity:1}
-.todo-del{opacity:0;transition:.15s;font-size:10px;padding:2px 6px;border-radius:4px;border:.5px solid #FECACA;background:var(--sur);color:var(--red);cursor:pointer;flex-shrink:0;margin-top:1px}
+
 .todo-body{flex:1;min-width:0}
 .todo-text{font-size:clamp(10px,.9vw,13px);color:var(--tx);font-weight:500;line-height:1.4}
 .todo-text.done{text-decoration:line-through;color:var(--tx3);font-weight:400}
@@ -244,6 +247,36 @@ textarea.fc{min-height:64px;resize:vertical}
   <div class="mf">
     <button class="btn" onclick="closeTodoModal()">취소</button>
     <button class="btn primary" onclick="saveTodo()">저장</button>
+  </div>
+</div>
+</div>
+
+<!-- ── TO DO 수정 모달 ── -->
+<div class="modal-bg" id="modal-todo-edit" onclick="if(event.target===this)closeTodoEditModal()">
+<div class="modal" style="width:440px">
+  <div class="modal-title">✏️ TO DO 수정</div>
+  <div class="fg"><label>담당자</label>
+    <select class="fc" id="todo-edit-person">
+      <option value="공통">📋 공통</option>
+      <option value="이경미">이경미</option>
+      <option value="이세영">이세영</option>
+      <option value="황유경">황유경</option>
+      <option value="모다은">모다은</option>
+      <option value="오승미">오승미</option>
+    </select>
+  </div>
+  <div class="fg"><label>할 일</label>
+    <input class="fc" type="text" id="todo-edit-text">
+  </div>
+  <div class="fg"><label>브랜드 태그</label>
+    <select class="fc" id="todo-edit-brand">
+      <option value="">없음</option>
+      <option value="전체">전체</option>
+    </select>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="closeTodoEditModal()">취소</button>
+    <button class="btn primary" onclick="saveTodoEdit()">저장</button>
   </div>
 </div>
 </div>
@@ -434,18 +467,35 @@ async function fbPatch(path,data){
 }
 
 const BRANDS = [
-  { key:'푸올',  full:'푸드올로지', main:'#C62828', bg:'#FFEBEE', tx:'#7F0000' },
-  { key:'어댑트',full:'어댑트',    main:'#1C1C1E', bg:'#F2F2F2', tx:'#1C1C1E' },
-  { key:'오브제',full:'오브제',    main:'#6D4C41', bg:'#EFEBE9', tx:'#4E342E' },
-  { key:'듀오렉신',full:'듀오렉신',main:'#0277BD', bg:'#E1F5FE', tx:'#01579B' },
-  { key:'8APM', full:'8APM',      main:'#00897B', bg:'#E0F2F1', tx:'#004D40' },
-  { key:'95P',  full:'95PROBLEM', main:'#D97706', bg:'#FFFBEB', tx:'#92400E' },
-  { key:'에이페',full:'에이페',   main:'#546E7A', bg:'#ECEFF1', tx:'#263238' },
-  { key:'풀리', full:'풀리(FULLY)',main:'#7CB342', bg:'#F1F8E9', tx:'#33691E' },
+  { key:'푸올',    full:'푸드올로지',  main:'#C62828', bg:'#FFEBEE', tx:'#7F0000' },
+  { key:'어댑트',  full:'어댑트',      main:'#1C1C1E', bg:'#F2F2F2', tx:'#1C1C1E' },
+  { key:'오브제',  full:'오브제',      main:'#6D4C41', bg:'#EFEBE9', tx:'#4E342E' },
+  { key:'듀오렉신',full:'듀오렉신',    main:'#0277BD', bg:'#E1F5FE', tx:'#01579B' },
+  { key:'8APM',   full:'8APM',        main:'#00897B', bg:'#E0F2F1', tx:'#004D40' },
+  { key:'95P',    full:'95PROBLEM',   main:'#D97706', bg:'#FFFBEB', tx:'#92400E' },
+  { key:'에이페',  full:'에이페',      main:'#546E7A', bg:'#ECEFF1', tx:'#263238' },
+  { key:'풀리',   full:'풀리(FULLY)',  main:'#7CB342', bg:'#F1F8E9', tx:'#33691E' },
+  { key:'스스_95', full:'스스_95',     main:'#7B1FA2', bg:'#F3E5F5', tx:'#4A148C' },
+  { key:'스스_푸올',full:'스스_푸올',  main:'#B71C1C', bg:'#FFCDD2', tx:'#7F0000' },
+  { key:'스스_풀리',full:'스스_풀리',  main:'#558B2F', bg:'#DCEDC8', tx:'#1B5E20' },
+  { key:'스스_에이페',full:'스스_에이페',main:'#37474F',bg:'#CFD8DC', tx:'#263238' },
+  { key:'스스_오브제',full:'스스_오브제',main:'#4E342E',bg:'#D7CCC8', tx:'#3E2723' },
 ];
 const BRAND_KEYS = BRANDS.map(b=>b.key);
 const DAYS=['일','월','화','수','목','금','토'];
 const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+/* 2026 대한민국 공휴일 (대체공휴일 포함) */
+const HOLIDAYS_2026={
+  '2026-01-01':'신정','2026-01-28':'설날 연휴','2026-01-29':'설날','2026-01-30':'설날 연휴',
+  '2026-03-01':'삼일절','2026-03-02':'대체공휴일',
+  '2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일',
+  '2026-06-06':'현충일','2026-06-08':'대체공휴일',
+  '2026-08-15':'광복절','2026-08-17':'대체공휴일',
+  '2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴','2026-09-28':'대체공휴일',
+  '2026-10-03':'개천절','2026-10-05':'대체공휴일','2026-10-09':'한글날',
+  '2026-12-25':'크리스마스'
+};
 
 function bc(key, media){ if(media&&media.includes('퀵윈')) return {main:'#EA580C',bg:'#FFF7ED',tx:'#9A3412'}; if(key==='전체') return {main:'#7C3AED',bg:'#EDE9FE',tx:'#4C1D95'}; return BRANDS.find(b=>b.key===key)||{main:'#888',bg:'#eee',tx:'#333'}; }
 function ds(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -664,7 +714,14 @@ function mkCell(date, other, isToday){
   const cell=document.createElement('div');
   cell.className='dc'+(other?' other':'')+(isToday?' tod':'')+(selDay===dstr?' sel':'');
   const chips=getChipsForDay(dstr);
-  let html=`<div class="dn">${date.getDate()}</div>`;
+  const dow=date.getDay();
+  const holName=HOLIDAYS_2026[dstr];
+  const isHol=!!holName;
+  const dnCls=isHol?'hol':dow===0?'sun':dow===6?'sat':'';
+  let html=`<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">
+    <div class="dn${dnCls?' '+dnCls:''}" style="margin-bottom:0">${date.getDate()}</div>
+    ${isHol?`<span class="hol-label" style="margin-bottom:0">쉬는날🙌</span>`:''}
+  </div>`;
   const barChips=chips.filter(c=>c.style==='bar');
   const regChips=chips.filter(c=>c.style!=='bar');
   /* 일반 칩 먼저 */
@@ -1314,6 +1371,37 @@ async function deleteTodo(id){
   await fbDelete(`todos/${id}`);
 }
 
+let editTodoId=null;
+function openTodoEditModal(id){
+  const t=todos.find(x=>x.id===id); if(!t) return;
+  editTodoId=id;
+  document.getElementById('todo-edit-person').value=t.person||'공통';
+  document.getElementById('todo-edit-text').value=t.text||'';
+  // fill brand select
+  const bs=document.getElementById('todo-edit-brand');
+  bs.innerHTML='<option value="">없음</option><option value="전체">전체</option>';
+  BRANDS.forEach(b=>{ const o=document.createElement('option'); o.value=b.key; o.textContent=b.key; bs.appendChild(o); });
+  bs.value=t.brand||'';
+  document.getElementById('modal-todo-edit').classList.add('open');
+}
+function closeTodoEditModal(){
+  document.getElementById('modal-todo-edit').classList.remove('open');
+  editTodoId=null;
+}
+async function saveTodoEdit(){
+  if(!editTodoId) return;
+  const text=document.getElementById('todo-edit-text').value.trim();
+  if(!text){alert('할 일을 입력해주세요');return;}
+  const t=todos.find(x=>x.id===editTodoId); if(!t) return;
+  t.person=document.getElementById('todo-edit-person').value;
+  t.text=text;
+  t.brand=document.getElementById('todo-edit-brand').value;
+  renderTodo();
+  closeTodoEditModal();
+  try{ localStorage.setItem('ad_todos',JSON.stringify(todos)); }catch(e){}
+  await fbPatch(`todos/${editTodoId}`,{person:t.person,text:t.text,brand:t.brand});
+}
+
 function renderTodo(){
   const el=document.getElementById('pane-todo'); if(!el) return;
   el.innerHTML='';
@@ -1377,9 +1465,16 @@ function makeTodoSection(title, person, items){
     }
     body.appendChild(meta); row.appendChild(body);
 
-    const del=document.createElement('button'); del.className='todo-del';
+    const acts=document.createElement('div');
+    acts.style.cssText='display:flex;gap:3px;flex-shrink:0;opacity:0;transition:.15s';
+    row.addEventListener('mouseenter',()=>acts.style.opacity='1');
+    row.addEventListener('mouseleave',()=>acts.style.opacity='0');
+    const editBtn=document.createElement('button'); editBtn.className='act-btn';
+    editBtn.textContent='수정'; editBtn.onclick=()=>openTodoEditModal(t.id);
+    const del=document.createElement('button'); del.className='act-btn del';
     del.textContent='삭제'; del.onclick=()=>deleteTodo(t.id);
-    row.appendChild(del); sec.appendChild(row);
+    acts.appendChild(editBtn); acts.appendChild(del);
+    row.appendChild(acts); sec.appendChild(row);
   });
   return sec;
 }
@@ -1391,8 +1486,8 @@ const TEAM = [
   { name:'이경미', birth:'1989-07-30' },
   { name:'이세영', birth:'1994-09-08' },
   { name:'황유경', birth:'1997-02-22' },
-  { name:'모다은',  birth:'' },
-  { name:'오승미',  birth:'' },
+  { name:'모다은',  birth:'1997-03-17' },
+  { name:'오승미',  birth:'2002-10-21' },
 ];
 
 let fortuneIdx = new Date().getDate() % TEAM.length;
