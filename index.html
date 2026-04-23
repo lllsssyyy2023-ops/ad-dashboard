@@ -500,6 +500,20 @@ const HOLIDAYS_2026={
   '2026-12-25':'크리스마스'
 };
 
+/* 영업일 계산 헬퍼 */
+function isBusinessDay(dstr){
+  const d=new Date(dstr+'T00:00:00');
+  const dow=d.getDay();
+  if(dow===0||dow===6) return false; // 주말
+  if(HOLIDAYS_2026[dstr]) return false; // 공휴일
+  return true;
+}
+function getNextBusinessDay(dstr){
+  let d=new Date(dstr+'T00:00:00');
+  do { d.setDate(d.getDate()+1); } while(!isBusinessDay(ds(d)));
+  return ds(d);
+}
+
 function bc(key, media){ if(media&&media.includes('퀵윈')) return {main:'#EA580C',bg:'#FFF7ED',tx:'#9A3412'}; if(key==='전체') return {main:'#7C3AED',bg:'#EDE9FE',tx:'#4C1D95'}; return BRANDS.find(b=>b.key===key)||{main:'#888',bg:'#eee',tx:'#333'}; }
 function ds(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function addDays(dstr,n){ const d=new Date(dstr+'T00:00:00'); d.setDate(d.getDate()+n); return ds(d); }
@@ -803,9 +817,9 @@ function renderPanel(date){
   const holName=HOLIDAYS_2026[ds(date)];
   const el=document.getElementById('panel-date-txt');
   if(el) el.innerHTML=`${m}월 ${d}일 (${dow})${isToday?' <span style="font-size:11px;background:var(--blue);color:#fff;padding:1px 7px;border-radius:20px;font-weight:500">오늘</span>':''}${holName?` <span style="font-size:11px;color:#EF4444">${holName}</span>`:''}`;
-  // 날짜 클릭 시 체크리스트 탭으로 자동 전환
-  if(curTab==='todo') swTab('chk');
-  renderChk();
+  // 날짜 클릭 시 탭 갱신
+  if(curTab==='todo') renderTodo();
+  else renderChk();
 }
 
 function swTab(t){
@@ -1361,7 +1375,8 @@ async function saveTodo(){
     brand:document.getElementById('todo-brand').value,
     due:document.getElementById('todo-due').value,
     done:false,
-    doneAt:'',
+    doneAt:null,
+    date:selDay,
     createdAt:todStr
   };
   // Firebase key를 ID로 사용 (패치/삭제 시 일치 보장)
@@ -1374,11 +1389,11 @@ async function saveTodo(){
 }
 async function toggleTodo(id){
   const t=todos.find(x=>x.id===id); if(!t) return;
-  t.done=!t.done;
-  t.doneAt=t.done?todStr:null;
+  t.done=true;
+  t.doneAt=selDay; // 완료한 날짜 저장 → 당일 취소선 유지
   renderTodo();
   try{ localStorage.setItem('ad_todos',JSON.stringify(todos)); }catch(e){}
-  await fbPatch(`todos/${id}`,{done:t.done, doneAt:t.done?todStr:null});
+  await fbPatch(`todos/${id}`,{done:true, doneAt:selDay});
 }
 async function deleteTodo(id){
   todos=todos.filter(x=>x.id!==id);
@@ -1421,39 +1436,60 @@ async function saveTodoEdit(){
 function renderTodo(){
   const el=document.getElementById('pane-todo'); if(!el) return;
   el.innerHTML='';
-  // ── 공통 섹션 ──
-  const common=todos.filter(t=>t.person==='공통');
-  el.appendChild(makeTodoSection('📋 공통', '공통', common));
 
-  // ── 팀원별 섹션 ──
-  MEMBERS.forEach(m=>{
-    const items=todos.filter(t=>t.person===m);
-    el.appendChild(makeTodoSection(`👤 ${m}`, m, items));
+  // TO DO 필터링:
+  // - 미완료: 작성 날짜 당일 OR selDay가 작성날짜 이후 영업일이면 표시
+  // - 완료: 완료한 날짜(doneAt)와 selDay가 같을 때만 표시
+  const activeTodos=todos.filter(t=>{
+    const td=t.date||t.createdAt||todStr;
+    if(t.done){
+      // 완료된 건 완료한 날만 표시
+      return t.doneAt===selDay;
+    }
+    // 미완료: 작성일 이후 영업일에 계속 표시
+    if(td===selDay) return true; // 당일
+    if(selDay>td){
+      // selDay가 작성일 이후인데 여전히 미완료면 표시 (영업일이면)
+      return isBusinessDay(selDay);
+    }
+    return false;
   });
+
+  // 섹션별 렌더 (항목 있는 섹션만 표시)
+  const allPersons=['공통',...MEMBERS];
+  let hasAny=false;
+  allPersons.forEach(p=>{
+    const items=activeTodos.filter(t=>t.person===p);
+    const icon=p==='공통'?'📋':'👤';
+    const sec=makeTodoSection(`${icon} ${p}`, p, items);
+    // 항목 없는 섹션도 + 버튼은 보이게, 단 "없음" 메시지 숨김
+    el.appendChild(sec);
+    if(items.length) hasAny=true;
+  });
+
+  if(!hasAny){
+    const msg=document.createElement('div');
+    msg.className='todo-empty';
+    msg.style.marginTop='8px';
+    const d=selDay===todStr?'오늘':selDay;
+    msg.textContent=`${d}에 등록된 TO DO가 없어요 ✨`;
+    el.insertBefore(msg, el.firstChild);
+  }
 }
 
 function makeTodoSection(title, person, items){
   const sec=document.createElement('div'); sec.className='todo-section';
   const hd=document.createElement('div'); hd.className='todo-section-hd';
-  const visible_cnt=items.filter(t=>!t.done || (t.doneAt && t.doneAt===todStr));
-  const cnt=visible_cnt.filter(t=>!t.done).length;
+  const cnt=items.length;
   hd.innerHTML=`<span>${title} <span style="opacity:.5">${cnt>0?`(${cnt})`:''}  </span></span>`;
   const addBtn=document.createElement('button'); addBtn.className='todo-add-btn';
   addBtn.textContent='+ 추가'; addBtn.onclick=()=>openTodoModal(person);
   hd.appendChild(addBtn); sec.appendChild(hd);
 
-  if(!items.length){
-    const emp=document.createElement('div'); emp.className='todo-empty';
-    emp.textContent='할 일이 없어요 🎉'; sec.appendChild(emp); return sec;
-  }
+  if(!items.length){ return sec; } // 항목 없으면 헤더(+버튼)만 표시
 
   // 미완료 먼저, 우선순위순
-  // 완료 처리한 날짜가 오늘이 아니면 숨김 (다음날 자동 제거)
-  const visible=items.filter(t=>!t.done || (t.doneAt && t.doneAt===todStr));
-  const sorted=[...visible].sort((a,b)=>{
-    if(a.done!==b.done) return a.done?1:-1;
-    return (a.due||'9999')>(b.due||'9999')?1:-1;
-  });
+  const sorted=[...items].sort((a,b)=>(a.due||'9999')>(b.due||'9999')?1:-1);
 
   sorted.forEach(t=>{
     const row=document.createElement('div'); row.className='todo-item';
