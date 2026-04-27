@@ -21,9 +21,9 @@
 body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;font-size:clamp(11px,1.1vw,16px);line-height:1.4}
 
 /* ── Layout ── */
-.layout{display:grid;grid-template-columns:1fr 320px;height:100vh;overflow:hidden}
-.col-l{padding:clamp(10px,1.2vh,20px) clamp(12px,1.5vw,24px);overflow:hidden;display:flex;flex-direction:column;height:100vh}
-.col-r{background:var(--sur);border-left:1px solid var(--bdr);padding:clamp(10px,1.2vh,18px);height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.layout{display:flex;height:100vh;overflow:hidden}
+.col-l{padding:clamp(10px,1.2vh,20px) clamp(12px,1.5vw,24px);overflow:hidden;display:flex;flex-direction:column;height:100vh;flex:1;min-width:0}
+.col-r{background:var(--sur);padding:clamp(10px,1.2vh,18px);height:100vh;overflow-y:auto;display:flex;flex-direction:column;flex-shrink:0;width:320px;min-width:220px;max-width:600px}
 
 /* ── Topbar ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:clamp(4px,.5vh,8px);flex-shrink:0}
@@ -48,6 +48,10 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);colo
 .leg-dot{width:6px;height:6px;border-radius:50%}
 
 /* ── Calendar ── */
+.cal-tab-wrap{display:flex;background:var(--sur2);border-radius:9px;padding:3px;gap:2px;margin-bottom:clamp(4px,.5vh,8px);flex-shrink:0}
+.cal-tab-btn{flex:1;font-size:clamp(10px,.9vw,13px);font-weight:600;padding:5px 0;border-radius:7px;border:none;background:transparent;color:var(--tx3);cursor:pointer;font-family:inherit;transition:.15s}
+.cal-tab-btn.on{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.35)}
+.cal-tab-btn:not(.on):hover{background:var(--sur);color:var(--tx2)}
 .cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:clamp(3px,.4vh,7px);flex-shrink:0}
 .cal-month{font-size:clamp(13px,1.3vw,20px);font-weight:700;letter-spacing:-.3px}
 .cal-nav{display:flex;gap:4px}
@@ -170,6 +174,11 @@ textarea.fc{min-height:64px;resize:vertical}
 .todo-due.overdue{color:var(--red);font-weight:600}
 .todo-empty{text-align:center;padding:12px 0;color:var(--tx3);font-size:clamp(9px,.8vw,12px)}
 
+/* ── Resizer ── */
+#resizer{width:5px;background:var(--bdr);cursor:col-resize;flex-shrink:0;transition:background .15s;position:relative;z-index:10}
+#resizer:hover,#resizer.dragging{background:var(--blue)}
+#resizer::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1px;height:30px;background:var(--bdr2);border-radius:2px}
+
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:8px}
 @media(max-width:900px){.layout{grid-template-columns:1fr;height:auto;overflow:auto}body{height:auto;overflow:auto}.col-l{height:auto;overflow:visible}.col-r{position:static;height:auto;border-left:none;border-top:1px solid var(--bdr)}.stats{grid-template-columns:repeat(2,1fr)}.cal-grid{flex:none}}
 </style>
@@ -182,12 +191,16 @@ textarea.fc{min-height:64px;resize:vertical}
   <div class="topbar">
     <div class="logo">어댑트 <span>광고 대시보드</span> <span id="fb-status" style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;background:#FEF9C3;color:#92400E;margin-left:6px">● 동기화됨</span></div>
     <div class="top-btns">
-      <button class="btn" onclick="openModal('task')">+ 업무 추가</button>
-      <button class="btn secondary" onclick="openModal('schedule')">+ 브검/퀵윈 일정</button>
+      <button class="btn secondary" onclick="openModal('schedule')">+브검/퀵윈 추가</button>
+      <button class="btn" onclick="openModal('task')">+ TO DO 추가</button>
     </div>
   </div>
   <div class="legend" id="legend"></div>
   <div id="expiry-bar" class="expiry-bar" style="display:none;flex-shrink:0"></div>
+  <div class="cal-tab-wrap">
+    <button class="cal-tab-btn on" id="caltab-schedule" onclick="swCalTab('schedule')">📋 브검/퀵윈/소재</button>
+    <button class="cal-tab-btn" id="caltab-todo" onclick="swCalTab('todo')">✅ TO DO</button>
+  </div>
   <div class="cal-hd">
     <div class="cal-month" id="cal-month"></div>
     <div class="cal-nav">
@@ -199,12 +212,13 @@ textarea.fc{min-height:64px;resize:vertical}
 </div>
 
 <!-- ── 우측: 패널 ── -->
-<div class="col-r">
+<div id="resizer"></div>
+<div class="col-r" id="col-r">
   <div id="panel-date-bar" style="font-size:clamp(11px,1.1vw,15px);font-weight:700;color:var(--tx);margin-bottom:6px;flex-shrink:0;display:flex;align-items:center;gap:6px">
     <span id="panel-date-txt" style="color:var(--blue)">날짜를 선택하세요</span>
   </div>
   <div class="tab-wrap" style="margin-top:0">
-    <button class="tab-btn on" id="tab-chk" onclick="swTab('chk')">데일리 체크리스트</button>
+    <button class="tab-btn on" id="tab-chk" onclick="swTab('chk')">오늘의 체크</button>
     <button class="tab-btn" id="tab-todo" onclick="swTab('todo')">📋 TO DO</button>
   </div>
   <div id="pane-chk" style="flex:1;overflow-y:auto"></div>
@@ -246,6 +260,9 @@ textarea.fc{min-height:64px;resize:vertical}
       <option value="전체">전체</option>
     </select>
   </div>
+  <div class="fg"><label>날짜 <span style="color:var(--tx3);font-weight:400">(기본: 선택한 날짜)</span></label>
+    <input class="fc" type="date" id="todo-date-input">
+  </div>
   <input type="hidden" id="todo-due" value="">
   <div class="mf">
     <button class="btn" onclick="closeTodoModal()">취소</button>
@@ -276,6 +293,9 @@ textarea.fc{min-height:64px;resize:vertical}
       <option value="">없음</option>
       <option value="전체">전체</option>
     </select>
+  </div>
+  <div class="fg"><label>날짜</label>
+    <input class="fc" type="date" id="todo-edit-date">
   </div>
   <div class="mf">
     <button class="btn" onclick="closeTodoEditModal()">취소</button>
@@ -478,11 +498,7 @@ const BRANDS = [
   { key:'95P',    full:'95PROBLEM',   main:'#D97706', bg:'#FFFBEB', tx:'#92400E' },
   { key:'에이페',  full:'에이페',      main:'#546E7A', bg:'#ECEFF1', tx:'#263238' },
   { key:'풀리',   full:'풀리(FULLY)',  main:'#7CB342', bg:'#F1F8E9', tx:'#33691E' },
-  { key:'스스_95', full:'스스_95',     main:'#7B1FA2', bg:'#F3E5F5', tx:'#4A148C' },
-  { key:'스스_푸올',full:'스스_푸올',  main:'#B71C1C', bg:'#FFCDD2', tx:'#7F0000' },
-  { key:'스스_풀리',full:'스스_풀리',  main:'#558B2F', bg:'#DCEDC8', tx:'#1B5E20' },
-  { key:'스스_에이페',full:'스스_에이페',main:'#37474F',bg:'#CFD8DC', tx:'#263238' },
-  { key:'스스_오브제',full:'스스_오브제',main:'#4E342E',bg:'#D7CCC8', tx:'#3E2723' },
+  { key:'스스',      full:'스스',        main:'#0F766E', bg:'#CCFBF1', tx:'#134E4A' },
 ];
 const BRAND_KEYS = BRANDS.map(b=>b.key);
 const DAYS=['일','월','화','수','목','금','토'];
@@ -540,6 +556,7 @@ let cy=new Date().getFullYear(), cm=new Date().getMonth();
 const todStr = ds(new Date());
 let selDay = todStr;
 let curTab = 'chk';
+let calTab = 'schedule'; // 'schedule' | 'todo'
 let nid = 1, sid = 1009;
 let ckd = {};
 
@@ -657,52 +674,40 @@ function fmtChip(brand, media, summary){
 function getChipsForDay(dstr){
   const chips = [];
 
-  // tasks: due 날짜에 표시
-  tasks.filter(t=>!filterBrand||t.brand===filterBrand).forEach(t=>{
-    if(t.due === dstr){
-      const c=bc(t.brand);
-      chips.push({ color:bc(t.brand,t.media), label:fmtChip(t.brand,t.media,t.summary), type:'task', id:t.id, style:'normal' });
-    }
-    // 마감 기한 날짜가 due와 다를 때 마감 표시
-    if(t.deadline && t.deadline !== t.due && t.deadline === dstr){
-      const c=bc(t.brand);
-      chips.push({ color:bc(t.brand,t.media), label:fmtChip(t.brand,t.media,t.summary)+' 마감', type:'task', id:t.id, style:'deadline' });
-    }
-  });
-
-  // schedules
-  schedules.filter(s=>!filterBrand||s.brand===filterBrand).forEach(s=>{
-    const c=bc(s.brand,s.media);
-
-    if(s.media==='퀵윈'){
-      /* 퀵윈: 브랜드 색상을 진하게 적용 */
-      if(dstr>=s.startDate && dstr<=s.endDate){
-        const isStart=dstr===s.startDate, isEnd=dstr===s.endDate;
-        const barPos=isStart&&isEnd?'solo':isStart?'start':isEnd?'end':'mid';
-        chips.push({ color:c, label:fmtChip(s.brand,s.media,s.summary), type:'schedule', id:s.id, style:'bar', barPos });
+  if(calTab==='schedule'){
+    // 브검/퀵윈/소재 탭: schedules + 정기업무만 표시
+    schedules.filter(s=>!filterBrand||s.brand===filterBrand).forEach(s=>{
+      const c=bc(s.brand,s.media);
+      if(s.media==='퀵윈'){
+        if(dstr>=s.startDate && dstr<=s.endDate){
+          const isStart=dstr===s.startDate, isEnd=dstr===s.endDate;
+          const barPos=isStart&&isEnd?'solo':isStart?'start':isEnd?'end':'mid';
+          chips.push({ color:c, label:fmtChip(s.brand,s.media,s.summary), type:'schedule', id:s.id, style:'bar', barPos });
+        }
+      } else {
+        const isContract=s.type==='계약';
+        const alertDays=isContract?14:2;
+        const alertDate=addDays(s.endDate,-alertDays);
+        const alertLabel=isContract?'D-14 재계약':'D-2 체크';
+        if(s.startDate===dstr) chips.push({ color:c, label:fmtChip(s.brand,s.media,s.summary)+' 시작', type:'schedule', id:s.id, style:'start' });
+        if(alertDate===dstr&&alertDate!==s.startDate&&alertDate!==s.endDate)
+          chips.push({ color:c, label:'['+s.brand+'] '+s.media+' '+alertLabel, type:'schedule', id:s.id, style:'alert' });
+        if(s.endDate===dstr) chips.push({ color:c, label:fmtChip(s.brand,s.media,s.summary)+' 종료', type:'schedule', id:s.id, style:'end' });
       }
-    } else {
-      const isContract = s.type==='계약';
-      const alertDays = isContract ? 14 : 2;
-      const alertDate = addDays(s.endDate, -alertDays);
-      const alertLabel = isContract ? 'D-14 재계약' : 'D-2 체크';
-      if(s.startDate === dstr){
-        chips.push({ color:c, label:fmtChip(s.brand,s.media,s.summary)+' 시작', type:'schedule', id:s.id, style:'start' });
-      }
-      if(alertDate === dstr && alertDate !== s.startDate && alertDate !== s.endDate){
-        chips.push({ color:c, label:`[${s.brand}] ${s.media} ${alertLabel}`, type:'schedule', id:s.id, style:'alert' });
-      }
-      if(s.endDate === dstr){
-        chips.push({ color:c, label:fmtChip(s.brand,s.media,s.summary)+' 종료', type:'schedule', id:s.id, style:'end' });
-      }
-    }
-  });
-
-  // 정기 반복 업무 (전체 표시 시만)
-  if(!filterBrand) getRecurring(dstr).forEach(r=>{
-    chips.push({ color:bc(r.brand,r.media),
-      label:`[${r.brand}] ${r.summary}`, type:'recurring', id:r.id, style:'normal' });
-  });
+    });
+  } else {
+    // TO DO 탭: tasks + 정기업무 표시
+    tasks.filter(t=>!filterBrand||t.brand===filterBrand).forEach(t=>{
+      if(t.due===dstr)
+        chips.push({ color:bc(t.brand,t.media), label:fmtChip(t.brand,t.media,t.summary), type:'task', id:t.id, style:'normal' });
+      if(t.deadline&&t.deadline!==t.due&&t.deadline===dstr)
+        chips.push({ color:bc(t.brand,t.media), label:fmtChip(t.brand,t.media,t.summary)+' 마감', type:'task', id:t.id, style:'deadline' });
+    });
+    // 정기업무도 TO DO 탭에 표시
+    if(!filterBrand) getRecurring(dstr).forEach(r=>{
+      chips.push({ color:bc(r.brand,r.media), label:'['+r.brand+'] '+r.summary, type:'recurring', id:r.id, style:'normal' });
+    });
+  }
   return chips;
 }
 
@@ -822,6 +827,15 @@ function renderPanel(date){
   else renderChk();
 }
 
+function swCalTab(t){
+  calTab=t;
+  ['schedule','todo'].forEach(x=>{
+    document.getElementById('caltab-'+x).classList.toggle('on',x===t);
+  });
+  renderCal();
+  renderExpiryBar();
+}
+
 function swTab(t){
   curTab=t;
   ['chk','todo'].forEach(x=>{
@@ -841,8 +855,8 @@ function renderChk(){
 
 function getChkItems(dstr){
   const items=[];
-  // 오늘이 마감 기한인 업무
-  tasks.filter(t=>t.deadline===dstr||t.due===dstr).forEach(t=>{
+  // 오늘이 마감 기한인 업무 (brand=전체 제외 → TO DO 공통으로)
+  tasks.filter(t=>(t.deadline===dstr||t.due===dstr) && t.brand!=='전체').forEach(t=>{
     items.push({ type:'task', id:t.id, brand:t.brand, media:t.media,
       label:fmtChip(t.brand,t.media,t.summary),
       sub:t.content||(t.deadline&&t.deadline!==t.due?`마감일: ${t.deadline}`:''),
@@ -871,8 +885,6 @@ function getChkItems(dstr){
         done:s.done, pill:s.type==='계약'?'계약종료':'소재종료', pillStyle:'end' });
     }
   });
-  // 정기 반복 업무
-  getRecurring(dstr).forEach(r=>items.push(r));
   return items;
 }
 
@@ -1196,6 +1208,54 @@ async function cleanupSeedDuplicates(){
 /* ════════════════════════════════════════
    FIREBASE REST API 동기화
 ════════════════════════════════════════ */
+/* ════════════════════════════════════════
+   SEED 데이터 — Firebase 내보내기 기준
+════════════════════════════════════════ */
+const SEED_TASKS = [
+  {id:'-OqjEmlKCzgx-yiVdIQP',brand:'전체',media:'퀵윈',summary:'5월 퀵윈 신청',content:'',due:'2026-04-24',deadline:'2026-04-24',done:true},
+  {id:'-OqmV8tNDxGtK9di4rF0',brand:'전체',media:'쇼검',summary:'MD 계정 예산 조정안 적용 진행',content:'',due:'2026-04-22',deadline:'2026-04-22',done:true},
+  {id:'-OqnSe25t-pOMuv_n0of',brand:'오브제',media:'키검',summary:'맥스선크림, 선스틱 그룹 입찰가 상향 조정 진행',content:'DA 볼륨 높히고 있다고 맥스선크림, 선스틱 관련 광고 입찰 밀리는거있는지 확인해달라고 요청',due:'2026-04-22',deadline:'2026-04-22',done:true},
+  {id:'-OqnVIqsvf0mdj5KNkXF',brand:'95P',media:'키검',summary:'주간 필터링 제안 내용 적용 진행',content:'',due:'2026-04-22',deadline:'2026-04-22',done:true},
+  {id:'-OqnVN6MXWCGWB0He3BC',brand:'풀리',media:'키검',summary:'주간 필터링 제안 내용 적용 진행',content:'',due:'2026-04-22',deadline:'2026-04-22',done:true},
+  {id:'-OqnVSlkiAk0VBnJyBeS',brand:'95P',media:'키검',summary:'네이버 쇼핑검색 PC 성과 감소 관련 대응 제안',content:'',due:'2026-04-22',deadline:'2026-04-22',done:true},
+  {id:'-OqnVdNEDt8f_56kv_LT',brand:'오브제',media:'키검',summary:'올리브영 기획전 진행상품 입찰 상향 조정 제안',content:'액티브 스웨트프루프 선스틱',due:'2026-04-23',deadline:'2026-04-23',done:false},
+  {id:'-OqnVmy6vbZQczWA--Rd',brand:'오브제',media:'키검',summary:'올리브영 기획전 진행상품 입찰 상향 조정 적용',content:'',due:'2026-04-27',deadline:'2026-04-27',done:false},
+  {id:'-Oqn_0eX1jh-_QhqkiQa',brand:'전체',media:'퀵윈',summary:'5월 퀵윈 재접수 가능',content:'',due:'2026-05-04',deadline:'2026-05-04',done:false},
+  {id:'-Oqn_5rXYU6UYTmVNS9f',brand:'전체',media:'퀵윈',summary:'5월 퀵윈 상향 신청 가능',content:'',due:'2026-05-15',deadline:'2026-05-15',done:false},
+  {id:'-OqniaukEhgO8q8MA92n',brand:'전체',media:'브검',summary:'주간 리포트 MD 계정 추가 필요',content:'',due:'2026-04-24',deadline:'2026-04-24',done:true},
+  {id:'-OqnimlIlgXQw2V0V8Wt',brand:'전체',media:'브검',summary:'광고비 충전 여부 완료 체크',content:'브검 연장해야함',due:'2026-04-24',deadline:'2026-04-24',done:true},
+  {id:'-Oqo3IPG12-RoQM3uSW1',brand:'전체',media:'키검',summary:'5월 믹스 작성',content:'',due:'2026-04-24',deadline:'2026-04-24',done:true},
+  {id:'-OqyE3ishPmbMVLaHIMc',brand:'스스',media:'쇼검',summary:'MD 계정 슬림벨트 딜 11시 오픈',content:'',due:'2026-04-27',deadline:'2026-04-27',done:false},
+  {id:'-OrBIB2eX05tiwjd9jQt',brand:'푸올',media:'브검',summary:'썸머페스타 소재 세팅',content:'',due:'2026-04-27',deadline:'2026-04-27',done:false},
+  {id:'-OrCjWeSWjn3ql_J3IB-',brand:'전체',media:'쇼검',summary:'MD 계정 주간 리포트 발송',content:'',due:'2026-04-29',deadline:'2026-04-29',done:false},
+  {id:'-OrDKl4F2G23KX2jMKs-',brand:'전체',media:'키검',summary:'주간 카테고리 다른거 확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
+  {id:'-OrDKxj6vwLlTb_sSDR_',brand:'전체',media:'브검',summary:'보류키워드 회신',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
+  {id:'-OrDL3t46jpc8N0SMmwD',brand:'푸올',media:'키검',summary:'레드비트URL 재수집/노출확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
+];
+
+const SEED_USER_SCHEDULES = [
+  {id:'-Oqj_GF1sR7hwNwtop0L',brand:'오브제',media:'브검',type:'소재교체',summary:'썸3 포켓몬선스틱 노출 예정',content:'썸3 포켓몬선스틱 노출 예정',startDate:'2026-05-01',endDate:'2026-05-31',done:false},
+  {id:'-OqmYExuMxySLHjwmEfv',brand:'푸올',media:'브검',type:'소재교체',summary:'올영소재교체',content:'키티 OFF, 상시 ON',startDate:'2026-04-30',endDate:'2026-05-01',done:false},
+  {id:'-OqnRfQETwovoUL20pUZ',brand:'풀리',media:'퀵윈',type:'집행',summary:'14시 타임보드',content:'14시 타임보드',startDate:'2026-05-07',endDate:'2026-05-07',done:false},
+  {id:'-OqnVv60xMr6eG0vSv5A',brand:'오브제',media:'브검',type:'소재교체',summary:'[오브제] 올영 온라인 기획전 / 봄맞이 스킨케어 포어제로 브랜드위크',content:'',startDate:'2026-04-13',endDate:'2026-04-20',done:false},
+  {id:'-OqnW7qcOJXHhDaT5RVO',brand:'오브제',media:'브검',type:'소재교체',summary:'올리브영 액티브 선스틱 기획전 노출',content:'',startDate:'2026-04-27',endDate:'2026-04-30',done:false},
+  {id:'-OrDPaCL7xti2k8GKlJc',brand:'풀리',media:'브검',type:'계약',summary:'브검 연장계약',content:'',startDate:'2026-04-28',endDate:'2026-04-28',done:false},
+];
+
+const SEED_TODOS = [
+  {id:'-Oqsz-LdFlnadmpfO9mj',person:'이경미',text:'5월 퀵윈 접수 ★중요도 상★',brand:'',due:'',done:false,doneAt:null,date:'2026-04-24',createdAt:'2026-04-23'},
+  {id:'-Oqsz4Ev07D83sLgPf-Y',person:'이세영',text:'GFA 애드부스트 애셋 분리 성과',brand:'푸올',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-23'},
+  {id:'-OqtgzgtodXX95Eo5oIW',person:'오승미',text:'브검 쿼리 모니터링 파일 만들기',brand:'전체',due:'',done:false,doneAt:null,date:'2026-04-24',createdAt:'2026-04-23'},
+  {id:'-OqtkAf-azi_eUNohN6h',person:'이세영',text:'브랜드 별 6월 목표 설정',brand:'전체',due:'',done:false,doneAt:null,date:'2026-05-20',createdAt:'2026-04-23'},
+  {id:'-OrBDs_BZN4lkPeZi6Sk',person:'모다은',text:'11시 기획전 소재 노출 시작',brand:'스스',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-23'},
+  {id:'-OrBDwEDTD7dJbh0LFVf',person:'모다은',text:'기획전 성과 확인',brand:'스스',due:'',done:false,doneAt:null,date:'2026-04-28',createdAt:'2026-04-23'},
+  {id:'-OrBHTlRqNJnjmUmtsXn',person:'모다은',text:'노출 게재보고',brand:'스스',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-23'},
+  {id:'-OrCJ0zp6VgpXdi-9nQ7',person:'이세영',text:'브랜드 별 5월 목표 설정 수정',brand:'',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-27'},
+  {id:'-OrCJJj4sBP0tv_2RQtw',person:'이세영',text:'브검 독스 생성 필요',brand:'',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-27'},
+  {id:'-OrC_v40mYeK0G1YJSCB',person:'이세영',text:'GFA 보고서 검증',brand:'',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-27'},
+  {id:'-OrCcnmUtUG35Ul_7DiL',person:'오승미',text:'보류 키워드 재점검',brand:'8APM',due:'',done:false,doneAt:null,date:'2026-04-28',createdAt:'2026-04-27'},
+];
+
 async function syncFromFirebase(){
   try{
     const [fbTasks, fbSchedules] = await Promise.all([
@@ -1205,14 +1265,40 @@ async function syncFromFirebase(){
     let changed = false;
 
     if(fbTasks !== null){
-      tasks = Object.entries(fbTasks||{})
+      const fbTaskEntries = Object.entries(fbTasks||{});
+      // 시드 tasks 중 Firebase에 없는 것 자동 추가
+      for(const s of SEED_TASKS){
+        if(!fbTaskEntries.find(([k])=>k===s.id)){
+          const {id,...data}=s;
+          await fbPut(`tasks/${id}`, data);
+          fbTaskEntries.push([id, data]);
+        }
+      }
+      tasks = fbTaskEntries
         .filter(([k])=>!deletingIds.has(k))
         .map(([k,v])=>({id:k,...v}));
+      changed = true;
+    } else {
+      // Firebase에 tasks 없으면 시드 전체 추가
+      for(const s of SEED_TASKS){
+        const {id,...data}=s;
+        await fbPut(`tasks/${id}`, data);
+      }
+      tasks = SEED_TASKS;
       changed = true;
     }
 
     if(fbSchedules !== null){
-      const userSchedules = Object.entries(fbSchedules||{})
+      const fbSchEntries = Object.entries(fbSchedules||{});
+      // 시드 user schedules 중 Firebase에 없는 것 자동 추가
+      for(const s of SEED_USER_SCHEDULES){
+        if(!fbSchEntries.find(([k])=>k===s.id)){
+          const {id,...data}=s;
+          await fbPut(`schedules/${id}`, data);
+          fbSchEntries.push([id, data]);
+        }
+      }
+      const userSchedules = fbSchEntries
         .filter(([k])=>!deletingIds.has(k))
         .map(([k,v])=>({id:k,...v}))
         .filter(u=>!SEED_SCHEDULES.some(s=>
@@ -1222,7 +1308,12 @@ async function syncFromFirebase(){
       schedules = [...SEED_SCHEDULES, ...userSchedules];
       changed = true;
     } else {
-      schedules = [...SEED_SCHEDULES];
+      // 시드 user schedules Firebase에 추가
+      for(const s of SEED_USER_SCHEDULES){
+        const {id,...data}=s;
+        await fbPut(`schedules/${id}`, data);
+      }
+      schedules = [...SEED_SCHEDULES, ...SEED_USER_SCHEDULES];
       changed = true;
     }
 
@@ -1343,8 +1434,16 @@ let todos=[]; // {id, person, text, brand, due, priority, done}
 /* Firebase 연동 */
 async function loadTodos(){
   const data=await fbGet('todos');
-  if(data) todos=Object.entries(data).map(([k,v])=>({id:k,...v}));
-  else todos=[];
+  const entries = Object.entries(data||{});
+  // 시드 todos 중 Firebase에 없는 것 자동 추가
+  for(const s of SEED_TODOS){
+    if(!entries.find(([k])=>k===s.id)){
+      const {id,...d}=s;
+      await fbPut(`todos/${id}`, d);
+      entries.push([id, d]);
+    }
+  }
+  todos=entries.map(([k,v])=>({id:k,...v}));
   try{ localStorage.setItem('ad_todos',JSON.stringify(todos)); }catch(e){}
   if(curTab==='todo') renderTodo();
 }
@@ -1353,7 +1452,6 @@ async function syncTodo(){
 }
 
 function openTodoModal(person=''){
-  // fill brand select
   const bs=document.getElementById('todo-brand');
   bs.innerHTML='<option value="">없음</option><option value="전체">전체</option>';
   BRANDS.forEach(b=>{ const o=document.createElement('option'); o.value=b.key; o.textContent=b.key; bs.appendChild(o); });
@@ -1361,6 +1459,9 @@ function openTodoModal(person=''){
   document.getElementById('todo-text').value='';
   document.getElementById('todo-due').value='';
   document.getElementById('todo-brand').value='';
+  // 날짜 기본값: 선택된 날짜
+  const di=document.getElementById('todo-date-input');
+  if(di) di.value=selDay;
   document.getElementById('modal-todo').classList.add('open');
 }
 function closeTodoModal(){
@@ -1376,7 +1477,7 @@ async function saveTodo(){
     due:document.getElementById('todo-due').value,
     done:false,
     doneAt:null,
-    date:selDay,
+    date:(document.getElementById('todo-date-input')?.value||selDay),
     createdAt:todStr
   };
   // Firebase key를 ID로 사용 (패치/삭제 시 일치 보장)
@@ -1408,11 +1509,13 @@ function openTodoEditModal(id){
   editTodoId=id;
   document.getElementById('todo-edit-person').value=t.person||'공통';
   document.getElementById('todo-edit-text').value=t.text||'';
-  // fill brand select
   const bs=document.getElementById('todo-edit-brand');
   bs.innerHTML='<option value="">없음</option><option value="전체">전체</option>';
   BRANDS.forEach(b=>{ const o=document.createElement('option'); o.value=b.key; o.textContent=b.key; bs.appendChild(o); });
   bs.value=t.brand||'';
+  // 날짜 설정
+  const di=document.getElementById('todo-edit-date');
+  if(di) di.value=t.date||t.createdAt||selDay;
   document.getElementById('modal-todo-edit').classList.add('open');
 }
 function closeTodoEditModal(){
@@ -1427,10 +1530,12 @@ async function saveTodoEdit(){
   t.person=document.getElementById('todo-edit-person').value;
   t.text=text;
   t.brand=document.getElementById('todo-edit-brand').value;
+  const newDate=document.getElementById('todo-edit-date')?.value||t.date||selDay;
+  t.date=newDate;
   renderTodo();
   closeTodoEditModal();
   try{ localStorage.setItem('ad_todos',JSON.stringify(todos)); }catch(e){}
-  await fbPatch(`todos/${editTodoId}`,{person:t.person,text:t.text,brand:t.brand,done:t.done,doneAt:t.doneAt||null});
+  await fbPatch(`todos/${editTodoId}`,{person:t.person,text:t.text,brand:t.brand,date:t.date,done:t.done,doneAt:t.doneAt||null});
 }
 
 function renderTodo(){
@@ -1455,11 +1560,30 @@ function renderTodo(){
     return false;
   });
 
+  // 정기업무를 공통 섹션에 추가 (해당 요일이면 표시)
+  const recurItems=getRecurring(selDay).map(r=>({
+    id:r.id, person:'공통', text:'[정기] '+r.summary,
+    brand:r.brand, date:selDay, done:!!ckd[r.id],
+    doneAt:ckd[r.id]?selDay:null, _recurring:true, _recurObj:r
+  }));
+
+  // brand=전체인 tasks를 공통 섹션에 추가 (수정 가능)
+  const commonTaskItems=tasks
+    .filter(t=>t.brand==='전체' && (t.due===selDay||t.deadline===selDay))
+    .map(t=>({
+      id:t.id, person:'공통',
+      text:'['+t.media+'] '+t.summary,
+      brand:t.brand, date:t.due||selDay,
+      done:t.done, doneAt:t.done?selDay:null,
+      _task:true, _taskObj:t
+    }));
+
   // 섹션별 렌더 (항목 있는 섹션만 표시)
   const allPersons=['공통',...MEMBERS];
   let hasAny=false;
   allPersons.forEach(p=>{
-    const items=activeTodos.filter(t=>t.person===p);
+    const base=activeTodos.filter(t=>t.person===p);
+    const items=p==='공통'?[...recurItems,...commonTaskItems,...base]:base;
     const icon=p==='공통'?'📋':'👤';
     const sec=makeTodoSection(`${icon} ${p}`, p, items);
     // 항목 없는 섹션도 + 버튼은 보이게, 단 "없음" 메시지 숨김
@@ -1495,7 +1619,18 @@ function makeTodoSection(title, person, items){
     const row=document.createElement('div'); row.className='todo-item';
     const ck=document.createElement('div');
     ck.className='ck'+(t.done?' done':'');
-    ck.onclick=()=>toggleTodo(t.id);
+    if(t._recurring){
+      ck.onclick=()=>{
+        const newVal=!ckd[t.id];
+        ckd[t.id]=newVal;
+        fbPatch('ckd',{[t.id.replace(/[.#$\[\]]/g,'_')]:newVal});
+        renderTodo();
+      };
+    } else if(t._task){
+      ck.onclick=()=>{ toggleDone('task',t.id); renderTodo(); };
+    } else {
+      ck.onclick=()=>toggleTodo(t.id);
+    }
     row.appendChild(ck);
 
     const body=document.createElement('div'); body.className='todo-body';
@@ -1520,16 +1655,30 @@ function makeTodoSection(title, person, items){
     }
     body.appendChild(meta); row.appendChild(body);
 
-    const acts=document.createElement('div');
-    acts.style.cssText='display:flex;gap:3px;flex-shrink:0;opacity:0;transition:.15s';
-    row.addEventListener('mouseenter',()=>acts.style.opacity='1');
-    row.addEventListener('mouseleave',()=>acts.style.opacity='0');
-    const editBtn=document.createElement('button'); editBtn.className='act-btn';
-    editBtn.textContent='수정'; editBtn.onclick=()=>openTodoEditModal(t.id);
-    const del=document.createElement('button'); del.className='act-btn del';
-    del.textContent='삭제'; del.onclick=()=>deleteTodo(t.id);
-    acts.appendChild(editBtn); acts.appendChild(del);
-    row.appendChild(acts); sec.appendChild(row);
+    if(!t._recurring){
+      const acts=document.createElement('div');
+      acts.style.cssText='display:flex;gap:3px;flex-shrink:0;opacity:0;transition:.15s';
+      row.addEventListener('mouseenter',()=>acts.style.opacity='1');
+      row.addEventListener('mouseleave',()=>acts.style.opacity='0');
+      const editBtn=document.createElement('button'); editBtn.className='act-btn';
+      editBtn.textContent='수정';
+      if(t._task){
+        editBtn.onclick=()=>openEditModal('task',t.id);
+      } else {
+        editBtn.onclick=()=>openTodoEditModal(t.id);
+      }
+      acts.appendChild(editBtn);
+      const del=document.createElement('button'); del.className='act-btn del';
+      del.textContent='삭제';
+      if(t._task){
+        del.onclick=()=>deleteItem('task',t.id);
+      } else {
+        del.onclick=()=>deleteTodo(t.id);
+      }
+      acts.appendChild(del);
+      row.appendChild(acts);
+    }
+    sec.appendChild(row);
   });
   return sec;
 }
@@ -1547,12 +1696,60 @@ const TEAM = [
 
 let fortuneIdx = new Date().getDate() % TEAM.length;
 
-/* 날짜+생년월일 기반 시드 난수 (API 없이 매일 다른 운세) */
+/* ── 사주/오행 기반 운세 시스템 ── */
 function seededRand(seed){
   let s=seed;
   return ()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
 }
 function pickIdx(arr, rng){ return arr[Math.floor(rng()*arr.length)]; }
+
+/* 천간(天干) */
+const CHEONGAN=['갑','을','병','정','무','기','경','신','임','계'];
+const CHEONGAN_ELEM=['목','목','화','화','토','토','금','금','수','수'];
+const CHEONGAN_ENERGY=['새로운 시작과 성장','부드러운 유연함','열정과 활력','따뜻한 빛','안정과 신뢰','배려와 조화','결단력과 추진력','세련된 감각','지혜와 흐름','깊은 통찰'];
+
+/* 지지(地支) */
+const JIJI=['자','축','인','묘','진','사','오','미','신','유','술','해'];
+const JIJI_ELEM=['수','토','목','목','토','화','화','토','금','금','토','수'];
+const JIJI_ANIMAL=['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+
+/* 오행 기운 조합 */
+const OHAENG_DESC={
+  '목':'창의력과 성장의 기운이 강해요. 새로운 시도를 두려워하지 마세요.',
+  '화':'열정과 표현의 기운이 넘치는 날이에요. 적극적으로 나서면 주목받아요.',
+  '토':'안정과 신뢰의 기운이 강해요. 꾸준함이 빛을 발하는 하루예요.',
+  '금':'결단력과 집중력이 높아지는 날이에요. 중요한 결정을 내리기 좋아요.',
+  '수':'지혜와 유연함의 기운이 흘러요. 직관을 따르면 좋은 결과가 따라와요.',
+};
+
+/* 오행 조화/충돌 */
+const OHAENG_HARMONY={
+  '목화':true,'화토':true,'토금':true,'금수':true,'수목':true,
+  '화목':true,'토화':true,'금토':true,'수금':true,'목수':true,
+};
+
+function getCheongan(dateStr){
+  // 1984-02-02 = 갑자년 기준 천간 계산
+  const base=new Date('1984-02-02');
+  const d=new Date(dateStr+'T00:00:00');
+  const diff=Math.floor((d-base)/(86400000));
+  return CHEONGAN[((diff%10)+10)%10];
+}
+function getJiji(dateStr){
+  const base=new Date('1984-02-02');
+  const d=new Date(dateStr+'T00:00:00');
+  const diff=Math.floor((d-base)/(86400000));
+  return JIJI[((diff%12)+12)%12];
+}
+function getBirthElem(birth){
+  if(!birth) return '토';
+  const year=parseInt(birth.slice(0,4));
+  return CHEONGAN_ELEM[((year-4)%10+10)%10];
+}
+function getDayElem(dateStr){
+  const cg=getCheongan(dateStr);
+  return CHEONGAN_ELEM[CHEONGAN.indexOf(cg)];
+}
 
 const F_WORK=[
   '오늘은 집중력이 높아 복잡한 업무도 빠르게 처리할 수 있는 날이에요.',
@@ -1563,6 +1760,13 @@ const F_WORK=[
   '창의적인 발상이 돋보이는 날이에요. 새로운 접근 방식을 시도해 보세요.',
   '업무 흐름이 원활한 하루로, 처리해야 할 일들이 자연스럽게 풀려나갈 거예요.',
   '오늘은 우선순위를 정리하면 효율이 두 배가 되는 날이에요.',
+  '준비해온 것들이 빛을 발하는 날이에요. 자신 있게 밀어붙여 보세요.',
+  '작은 실수도 성장의 발판이 되는 하루예요. 너무 자책하지 마세요.',
+  '오늘은 멀티태스킹보다 한 가지에 집중하는 것이 훨씬 효과적이에요.',
+  '새로운 방법을 시도하면 예상보다 좋은 결과가 나오는 날이에요.',
+  '오늘은 보고나 제안 타이밍이 좋아요. 망설이지 말고 의견을 내보세요.',
+  '집중이 잘 되는 날이에요. 까다로운 업무를 오전에 처리하면 오후가 가벼워져요.',
+  '꾸준히 해온 노력이 수치로 증명되는 날이에요. 데이터를 다시 한번 확인해 보세요.',
 ];
 const F_PEOPLE=[
   '주변 사람들과의 소통이 원활해지는 날이에요. 솔직한 대화가 관계를 더 깊게 만들어요.',
@@ -1571,6 +1775,12 @@ const F_PEOPLE=[
   '가까운 동료에게 작은 관심을 표현해 보세요. 뜻밖의 좋은 인연이 깊어질 수 있어요.',
   '팀의 분위기를 이끄는 에너지가 넘치는 날이에요. 자연스럽게 중심이 될 수 있어요.',
   '오해가 풀리기 좋은 날이에요. 용기 내어 먼저 다가가면 좋은 결과가 있을 거예요.',
+  '오늘은 유머 감각이 빛나는 날이에요. 가벼운 농담 한마디가 분위기를 살릴 거예요.',
+  '신뢰가 쌓이는 하루예요. 작은 약속도 꼭 지키면 관계가 단단해져요.',
+  '오늘 누군가에게 먼저 연락해보세요. 반가운 소식이 돌아올 수 있어요.',
+  '팀워크가 빛을 발하는 날이에요. 혼자보다 함께할 때 훨씬 좋은 결과가 나와요.',
+  '오늘은 상대방의 입장에서 생각해보면 막혔던 문제가 술술 풀려요.',
+  '진심 어린 피드백을 주고받기 좋은 날이에요. 솔직함이 성장을 만들어요.',
 ];
 const F_GENERAL=[
   '오늘 하루는 작은 것에서 큰 기쁨을 찾을 수 있어요. 순간순간을 즐겨보세요 ☀️',
@@ -1581,6 +1791,13 @@ const F_GENERAL=[
   '꾸준히 해온 노력이 인정받는 날이에요. 스스로를 충분히 칭찬해 주세요 💪',
   '뜻밖의 기쁜 소식이 찾아올 수 있는 날이에요. 열린 마음으로 하루를 시작해요 🎉',
   '오늘 하루 마무리가 아름다울 것 같아요. 저녁에 좋아하는 것으로 스스로에게 선물해보세요 🌙',
+  '작은 성취에도 충분히 기뻐하는 하루가 되길 바라요. 모든 걸음이 의미 있어요 🌈',
+  '오늘은 새로운 것을 배우기 딱 좋은 날이에요. 호기심을 마음껏 펼쳐보세요 📚',
+  '잠시 멈추고 주변을 둘러보세요. 놓쳤던 소중한 것들이 보일 거예요 🔍',
+  '오늘의 작은 결정이 큰 변화를 만들 수 있어요. 신중하게, 하지만 용기 있게 선택해보세요 🎯',
+  '스트레스보다 즐거움에 집중하는 날이에요. 웃음이 최고의 에너지예요 😊',
+  '오늘은 계획대로 흘러가는 날이에요. 준비한 대로 차분히 실행해보세요 📋',
+  '예상치 못한 기회가 찾아올 수 있어요. 유연하게 대처하면 큰 행운이 돼요 🎁',
 ];
 const F_LUCKY=[
   '행운의 색상은 파란색, 행운의 숫자는 7이에요.',
@@ -1589,21 +1806,35 @@ const F_LUCKY=[
   '행운의 음식은 따뜻한 음료예요. 커피 한 잔이 오늘의 활력이 될 거예요.',
   '행운의 색상은 초록색이에요. 자연에서 영감을 받아보세요.',
   '행운의 숫자는 3이에요. 세 번 생각하면 최선의 답이 나와요.',
+  '행운의 방향은 남쪽이에요. 오늘 점심은 사무실 남쪽 방향으로 나가보세요.',
+  '행운의 아이템은 펜이에요. 손으로 직접 적으면 아이디어가 더 잘 떠올라요.',
+  '행운의 색상은 노란색이에요. 작은 노란색 소품이 기분을 밝게 해줄 거예요.',
+  '행운의 숫자는 8이에요. 8번째 선택이 가장 좋은 결과를 가져올 거예요.',
+  '행운의 시간은 오후 2~4시예요. 이 시간에 중요한 연락을 해보세요.',
+  '행운의 음식은 과일이에요. 달콤한 것 하나로 오늘의 에너지를 채워보세요.',
 ];
 
 function generateFortune(person, dateStr){
-  const seed=parseInt(dateStr.replace(/-/g,''))+parseInt(person.birth.replace(/-/g,''));
+  const cgIdx=CHEONGAN.indexOf(getCheongan(dateStr));
+  const jijiIdx=JIJI.indexOf(getJiji(dateStr));
+  const dayElem=CHEONGAN_ELEM[cgIdx];
+  const dayAnimal=JIJI_ANIMAL[jijiIdx];
+  const dayEnergy=CHEONGAN_ENERGY[cgIdx];
+  const birthElem=getBirthElem(person.birth);
+  const harmony=OHAENG_HARMONY[birthElem+dayElem]||OHAENG_HARMONY[dayElem+birthElem];
+  const harmonyTxt=harmony
+    ? '['+dayElem+' 기운] 오늘의 '+dayElem+' 기운이 당신의 '+birthElem+' 기운과 잘 어우러져요. ✨'
+    : '['+dayElem+' 기운] 오늘의 '+dayElem+' 기운이 만나 긴장감을 만들어요. 신중하게 행동하면 오히려 기회가 돼요.';
+  const dateSeed=parseInt(dateStr.replace(/-/g,''));
+  const birthSeed=person.birth?parseInt(person.birth.replace(/-/g,'')):19900101;
+  const seed=(dateSeed*31+birthSeed*7)>>>0;
   const rng=seededRand(seed);
   const w=pickIdx(F_WORK,rng);
   const p=pickIdx(F_PEOPLE,rng);
-  const g=pickIdx(F_GENERAL,rng);
   const l=pickIdx(F_LUCKY,rng);
-  return `💼 ${w}
-👥 ${p}
-${g}
-🍀 ${l}`;
+  const line1='['+CHEONGAN[cgIdx]+JIJI[jijiIdx]+'일 '+dayAnimal+'의 날] '+dayEnergy+'의 하루예요.';
+  return [line1, harmonyTxt, '[업무] '+w, '[대인] '+p, '[행운] '+l].join('\n');
 }
-
 function nextFortunePerson(){
   fortuneIdx=(fortuneIdx+1)%TEAM.length;
   loadFortune();
@@ -1623,6 +1854,49 @@ function loadFortune(){
 }
 
 /* ════════════════════════════════════════
+   패널 너비 조절 (드래그)
+════════════════════════════════════════ */
+function initResizer(){
+  const resizer=document.getElementById('resizer');
+  const colR=document.getElementById('col-r');
+  if(!resizer||!colR) return;
+
+  let startX, startW;
+
+  resizer.addEventListener('mousedown', e=>{
+    startX=e.clientX;
+    startW=colR.offsetWidth;
+    resizer.classList.add('dragging');
+    document.body.style.cursor='col-resize';
+    document.body.style.userSelect='none';
+
+    function onMove(e){
+      const dx=startX-e.clientX; // 왼쪽으로 드래그 = 패널 넓어짐
+      const newW=Math.min(600, Math.max(220, startW+dx));
+      colR.style.width=newW+'px';
+      // 너비 저장
+      try{ localStorage.setItem('panel_width', newW); }catch(e){}
+    }
+    function onUp(){
+      resizer.classList.remove('dragging');
+      document.body.style.cursor='';
+      document.body.style.userSelect='';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  });
+
+  // 저장된 너비 복원
+  try{
+    const saved=localStorage.getItem('panel_width');
+    if(saved) colR.style.width=saved+'px';
+  }catch(e){}
+}
+
+/* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
 function init(){
@@ -1635,6 +1909,7 @@ function init(){
   renderCal();
   const initDay=new Date(todStr+'T00:00:00'); renderPanel(initDay);
 
+  initResizer();
   cleanupSeedDuplicates().then(()=>syncFromFirebase()); // 중복 정리 후 동기화
   setInterval(syncFromFirebase, 30000);        // 30초마다 자동 동기화
   loadFortune();
