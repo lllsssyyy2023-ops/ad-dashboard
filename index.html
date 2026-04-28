@@ -260,8 +260,13 @@ textarea.fc{min-height:64px;resize:vertical}
       <option value="전체">전체</option>
     </select>
   </div>
-  <div class="fg"><label>날짜 <span style="color:var(--tx3);font-weight:400">(기본: 선택한 날짜)</span></label>
-    <input class="fc" type="date" id="todo-date-input">
+  <div class="form-row">
+    <div class="fg"><label>시작 날짜</label>
+      <input class="fc" type="date" id="todo-start-date">
+    </div>
+    <div class="fg"><label>마감 날짜</label>
+      <input class="fc" type="date" id="todo-end-date">
+    </div>
   </div>
   <input type="hidden" id="todo-due" value="">
   <div class="mf">
@@ -294,8 +299,13 @@ textarea.fc{min-height:64px;resize:vertical}
       <option value="전체">전체</option>
     </select>
   </div>
-  <div class="fg"><label>날짜</label>
-    <input class="fc" type="date" id="todo-edit-date">
+  <div class="form-row">
+    <div class="fg"><label>시작 날짜</label>
+      <input class="fc" type="date" id="todo-edit-start">
+    </div>
+    <div class="fg"><label>마감 날짜</label>
+      <input class="fc" type="date" id="todo-edit-end">
+    </div>
   </div>
   <div class="mf">
     <button class="btn" onclick="closeTodoEditModal()">취소</button>
@@ -339,7 +349,7 @@ textarea.fc{min-height:64px;resize:vertical}
   </div>
   <div class="form-row">
     <div class="fg"><label>날짜</label><input class="fc" type="date" id="t-due"></div>
-    <div class="fg"><label>광고주 마감 기한</label><input class="fc" type="date" id="t-deadline"></div>
+    <div class="fg"><label>마감 날짜</label><input class="fc" type="date" id="t-deadline"></div>
   </div>
   <div class="mf">
     <button class="btn" onclick="closeModal('task')">취소</button>
@@ -403,7 +413,7 @@ textarea.fc{min-height:64px;resize:vertical}
     <div class="fg"><label>업무 내용</label><textarea class="fc" id="et-content"></textarea></div>
     <div class="form-row">
       <div class="fg"><label>날짜</label><input class="fc" type="date" id="et-due"></div>
-      <div class="fg"><label>광고주 마감 기한</label><input class="fc" type="date" id="et-deadline"></div>
+      <div class="fg"><label>마감 날짜</label><input class="fc" type="date" id="et-deadline"></div>
     </div>
   </div>
   <!-- 일정 수정 -->
@@ -1226,11 +1236,14 @@ const SEED_TASKS = [
   {id:'-OqnimlIlgXQw2V0V8Wt',brand:'전체',media:'브검',summary:'광고비 충전 여부 완료 체크',content:'브검 연장해야함',due:'2026-04-24',deadline:'2026-04-24',done:true},
   {id:'-Oqo3IPG12-RoQM3uSW1',brand:'전체',media:'키검',summary:'5월 믹스 작성',content:'',due:'2026-04-24',deadline:'2026-04-24',done:true},
   {id:'-OqyE3ishPmbMVLaHIMc',brand:'스스',media:'쇼검',summary:'MD 계정 슬림벨트 딜 11시 오픈',content:'',due:'2026-04-27',deadline:'2026-04-27',done:false},
-  {id:'-OrBIB2eX05tiwjd9jQt',brand:'푸올',media:'브검',summary:'썸머페스타 소재 세팅',content:'',due:'2026-04-27',deadline:'2026-04-27',done:false},
+  {id:'-OrBIB2eX05tiwjd9jQt',brand:'푸올',media:'브검',summary:'썸머페스타 소재 세팅',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
   {id:'-OrCjWeSWjn3ql_J3IB-',brand:'전체',media:'쇼검',summary:'MD 계정 주간 리포트 발송',content:'',due:'2026-04-29',deadline:'2026-04-29',done:false},
-  {id:'-OrDKl4F2G23KX2jMKs-',brand:'전체',media:'키검',summary:'주간 카테고리 다른거 확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
-  {id:'-OrDKxj6vwLlTb_sSDR_',brand:'전체',media:'브검',summary:'보류키워드 회신',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
-  {id:'-OrDL3t46jpc8N0SMmwD',brand:'푸올',media:'키검',summary:'레드비트URL 재수집/노출확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
+  {id:'-OrDKl4F2G23KX2jMKs-',brand:'전체',media:'키검',summary:'주간 카테고리 다른거 확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:true},
+  {id:'-OrDKxj6vwLlTb_sSDR_',brand:'전체',media:'브검',summary:'보류키워드 회신',content:'',due:'2026-04-28',deadline:'2026-04-28',done:true},
+  {id:'-OrDL3t46jpc8N0SMmwD',brand:'푸올',media:'키검',summary:'레드비트URL 재수집/노출확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:true},
+  {id:'-OrHkSFQkhcoKtET1j7a',brand:'오브제',media:'키검',summary:'소재 제안',content:'오일컨트롤선스틱, 오일컨트롤피니셔 대상 제품 소구 소재 제안',due:'2026-04-29',deadline:'2026-04-29',done:false},
+  {id:'-OrHo3qfymAo6ob6BofT',brand:'전체',media:'키검',summary:'푸올/95 리그룹핑',content:'',due:'2026-04-30',deadline:'2026-04-30',done:false},
+  {id:'-OrHoQHHLB0ErD7F6NTU',brand:'전체',media:'브검',summary:'에이페 연장',content:'충전후',due:'2026-04-30',deadline:'2026-04-30',done:false},
 ];
 
 const SEED_USER_SCHEDULES = [
@@ -1243,17 +1256,22 @@ const SEED_USER_SCHEDULES = [
 ];
 
 const SEED_TODOS = [
-  {id:'-Oqsz-LdFlnadmpfO9mj',person:'이경미',text:'5월 퀵윈 접수 ★중요도 상★',brand:'',due:'',done:false,doneAt:null,date:'2026-04-24',createdAt:'2026-04-23'},
   {id:'-Oqsz4Ev07D83sLgPf-Y',person:'이세영',text:'GFA 애드부스트 애셋 분리 성과',brand:'푸올',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-23'},
   {id:'-OqtgzgtodXX95Eo5oIW',person:'오승미',text:'브검 쿼리 모니터링 파일 만들기',brand:'전체',due:'',done:false,doneAt:null,date:'2026-04-24',createdAt:'2026-04-23'},
   {id:'-OqtkAf-azi_eUNohN6h',person:'이세영',text:'브랜드 별 6월 목표 설정',brand:'전체',due:'',done:false,doneAt:null,date:'2026-05-20',createdAt:'2026-04-23'},
-  {id:'-OrBDs_BZN4lkPeZi6Sk',person:'모다은',text:'11시 기획전 소재 노출 시작',brand:'스스',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-23'},
-  {id:'-OrBDwEDTD7dJbh0LFVf',person:'모다은',text:'기획전 성과 확인',brand:'스스',due:'',done:false,doneAt:null,date:'2026-04-28',createdAt:'2026-04-23'},
-  {id:'-OrBHTlRqNJnjmUmtsXn',person:'모다은',text:'노출 게재보고',brand:'스스',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-23'},
-  {id:'-OrCJ0zp6VgpXdi-9nQ7',person:'이세영',text:'브랜드 별 5월 목표 설정 수정',brand:'',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-27'},
   {id:'-OrCJJj4sBP0tv_2RQtw',person:'이세영',text:'브검 독스 생성 필요',brand:'',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-27'},
-  {id:'-OrC_v40mYeK0G1YJSCB',person:'이세영',text:'GFA 보고서 검증',brand:'',due:'',done:false,doneAt:null,date:'2026-04-27',createdAt:'2026-04-27'},
   {id:'-OrCcnmUtUG35Ul_7DiL',person:'오승미',text:'보류 키워드 재점검',brand:'8APM',due:'',done:false,doneAt:null,date:'2026-04-28',createdAt:'2026-04-27'},
+  {id:'-OrHLZEyU0rHw1_aifiH',person:'이세영',text:'GFA RD 오류 발견되어 현서프로님 확인 중',brand:'전체',due:'',done:false,doneAt:null,date:'2026-04-28',createdAt:'2026-04-28'},
+  {id:'-OrHM9BiV-tx7s6oQ5c-',person:'모다은',text:'95 신규 브랜드검색 소재 전달 예정 - 세팅',brand:'95P',due:'',done:false,doneAt:null,date:'2026-05-04',createdAt:'2026-04-28'},
+  {id:'-OrHOjTrqAWxlxLhrxBA',person:'이세영',text:'푸올 브검 재제안_2차',brand:'',due:'',done:false,doneAt:null,date:'2026-04-28',createdAt:'2026-04-28'},
+  {id:'-OrHOnFlzVHjv7Sbzir3',person:'황유경',text:'푸올 계정 리그룹핑',brand:'',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-28'},
+  {id:'-OrHOqjQSqDwSK96x9I5',person:'모다은',text:'95 계정 리그룹핑',brand:'',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-28'},
+  {id:'-OrHOty2Y8qV3cWGNSpm',person:'모다은',text:'오브제 선스틱 관련 브검 제안',brand:'오브제',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-28'},
+  {id:'-OrHP6q7tvKyuvqH13oh',person:'황유경',text:'에이페 브검 재계약',brand:'어댑트',due:'',done:false,doneAt:null,date:'2026-04-28',createdAt:'2026-04-28'},
+  {id:'-OrIJj9Vi0Kf3Fk5dGFs',person:'모다은',text:'풀리 예산 증액건 관련 제안',brand:'풀리',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-28'},
+  {id:'-OrIJmSUreYLgcyLtqAF',person:'모다은',text:'신제품 브검 셋 제안',brand:'풀리',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-28'},
+  {id:'-OrIJpNyzC80axIZWhTN',person:'모다은',text:'오브제 데일리 리포트',brand:'오브제',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-28'},
+  {id:'-OrIJrvNvGelYYPI272d',person:'모다은',text:'브검 세팅 확인',brand:'오브제',due:'',done:false,doneAt:null,date:'2026-04-29',createdAt:'2026-04-28'},
 ];
 
 async function syncFromFirebase(){
@@ -1433,11 +1451,15 @@ let todos=[]; // {id, person, text, brand, due, priority, done}
 
 /* Firebase 연동 */
 async function loadTodos(){
-  const data=await fbGet('todos');
-  const entries = Object.entries(data||{});
-  // 시드 todos 중 Firebase에 없는 것 자동 추가
+  const [data, deletedData] = await Promise.all([
+    fbGet('todos'), fbGet('deleted_todos')
+  ]);
+  const deletedIds=new Set(Object.keys(deletedData||{}));
+  const entries = Object.entries(data||{}).filter(([k])=>!deletedIds.has(k));
+
+  // 시드 todos 중 Firebase에 없고 삭제된 적도 없는 것만 자동 추가
   for(const s of SEED_TODOS){
-    if(!entries.find(([k])=>k===s.id)){
+    if(!deletedIds.has(s.id) && !entries.find(([k])=>k===s.id)){
       const {id,...d}=s;
       await fbPut(`todos/${id}`, d);
       entries.push([id, d]);
@@ -1459,9 +1481,8 @@ function openTodoModal(person=''){
   document.getElementById('todo-text').value='';
   document.getElementById('todo-due').value='';
   document.getElementById('todo-brand').value='';
-  // 날짜 기본값: 선택된 날짜
-  const di=document.getElementById('todo-date-input');
-  if(di) di.value=selDay;
+  document.getElementById('todo-start-date').value=selDay;
+  document.getElementById('todo-end-date').value=selDay;
   document.getElementById('modal-todo').classList.add('open');
 }
 function closeTodoModal(){
@@ -1470,14 +1491,17 @@ function closeTodoModal(){
 async function saveTodo(){
   const text=document.getElementById('todo-text').value.trim();
   if(!text){alert('할 일을 입력해주세요');return;}
+  const startDate=document.getElementById('todo-start-date').value||selDay;
+  const endDate=document.getElementById('todo-end-date').value||startDate;
   const data={
     person:document.getElementById('todo-person').value,
     text,
     brand:document.getElementById('todo-brand').value,
-    due:document.getElementById('todo-due').value,
+    due:endDate,
     done:false,
     doneAt:null,
-    date:(document.getElementById('todo-date-input')?.value||selDay),
+    date:startDate,
+    endDate:endDate,
     createdAt:todStr
   };
   // Firebase key를 ID로 사용 (패치/삭제 시 일치 보장)
@@ -1501,6 +1525,7 @@ async function deleteTodo(id){
   renderTodo();
   try{ localStorage.setItem('ad_todos',JSON.stringify(todos)); }catch(e){}
   await fbDelete(`todos/${id}`);
+  await fbPut(`deleted_todos/${id}`, {at:todStr}); // 재등록 방지
 }
 
 let editTodoId=null;
@@ -1514,8 +1539,8 @@ function openTodoEditModal(id){
   BRANDS.forEach(b=>{ const o=document.createElement('option'); o.value=b.key; o.textContent=b.key; bs.appendChild(o); });
   bs.value=t.brand||'';
   // 날짜 설정
-  const di=document.getElementById('todo-edit-date');
-  if(di) di.value=t.date||t.createdAt||selDay;
+  document.getElementById('todo-edit-start').value=t.date||t.createdAt||selDay;
+  document.getElementById('todo-edit-end').value=t.endDate||t.date||t.createdAt||selDay;
   document.getElementById('modal-todo-edit').classList.add('open');
 }
 function closeTodoEditModal(){
@@ -1530,12 +1555,15 @@ async function saveTodoEdit(){
   t.person=document.getElementById('todo-edit-person').value;
   t.text=text;
   t.brand=document.getElementById('todo-edit-brand').value;
-  const newDate=document.getElementById('todo-edit-date')?.value||t.date||selDay;
-  t.date=newDate;
+  const newStart=document.getElementById('todo-edit-start')?.value||t.date||selDay;
+  const newEnd=document.getElementById('todo-edit-end')?.value||newStart;
+  t.date=newStart;
+  t.endDate=newEnd;
+  t.due=newEnd;
   renderTodo();
   closeTodoEditModal();
   try{ localStorage.setItem('ad_todos',JSON.stringify(todos)); }catch(e){}
-  await fbPatch(`todos/${editTodoId}`,{person:t.person,text:t.text,brand:t.brand,date:t.date,done:t.done,doneAt:t.doneAt||null});
+  await fbPatch(`todos/${editTodoId}`,{person:t.person,text:t.text,brand:t.brand,date:t.date,endDate:t.endDate,due:t.due,done:t.done,doneAt:t.doneAt||null});
 }
 
 function renderTodo(){
@@ -1546,17 +1574,22 @@ function renderTodo(){
   // - 미완료: 작성 날짜 당일 OR selDay가 작성날짜 이후 영업일이면 표시
   // - 완료: 완료한 날짜(doneAt)와 selDay가 같을 때만 표시
   const activeTodos=todos.filter(t=>{
-    const td=t.date||t.createdAt||todStr;
-    if(t.done){
-      // 완료된 건 완료한 날만 표시
-      return t.doneAt===selDay;
-    }
-    // 미완료: 작성일 이후 영업일에 계속 표시
-    if(td===selDay) return true; // 당일
-    if(selDay>td){
-      // selDay가 작성일 이후인데 여전히 미완료면 표시 (영업일이면)
-      return isBusinessDay(selDay);
-    }
+    const start=t.date||t.createdAt||todStr;
+    const end=t.endDate||t.date||t.createdAt||todStr;
+
+    // 삭제된 항목은 완전히 숨김 (done=true + doneAt이 다른 날이면 숨김)
+    if(t.done && t.doneAt && t.doneAt!==selDay) return false;
+    if(t.done && !t.doneAt) return false;
+
+    // 완료 항목: 완료한 날에만 취소선으로 표시
+    if(t.done && t.doneAt===selDay) return selDay>=start && selDay<=end;
+
+    // 미완료: 시작~마감 기간 내이면 표시
+    if(selDay>=start && selDay<=end) return true;
+
+    // 기간 종료 후에도 미완료면 다음 영업일에 계속 표시
+    if(selDay>end && isBusinessDay(selDay)) return true;
+
     return false;
   });
 
