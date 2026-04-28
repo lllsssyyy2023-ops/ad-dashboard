@@ -1045,9 +1045,13 @@ function deleteItem(type,id){
   else schedules=schedules.filter(x=>String(x.id)!==String(id));
   saveLocal();
   ra();
-  // Firebase REST API 삭제
-  fbDelete(`${type==='task'?'tasks':'schedules'}/${id}`)
-    .then(()=>deletingIds.delete(String(id)));
+  // Firebase REST API 삭제 + 재등록 방지
+  const path=type==='task'?'tasks':'schedules';
+  fbDelete(`${path}/${id}`)
+    .then(()=>{
+      deletingIds.delete(String(id));
+      return fbPut(`deleted_${path}/${id}`,{at:todStr});
+    });
 }
 
 function ra(){
@@ -1276,24 +1280,27 @@ const SEED_TODOS = [
 
 async function syncFromFirebase(){
   try{
-    const [fbTasks, fbSchedules] = await Promise.all([
-      fbGet('tasks'), fbGet('schedules')
+    const [fbTasks, fbSchedules, fbDeletedTasks, fbDeletedSchedules] = await Promise.all([
+      fbGet('tasks'), fbGet('schedules'),
+      fbGet('deleted_tasks'), fbGet('deleted_schedules')
     ]);
+    const deletedTaskIds=new Set(Object.keys(fbDeletedTasks||{}));
+    const deletedScheduleIds=new Set(Object.keys(fbDeletedSchedules||{}));
 
     let changed = false;
 
     if(fbTasks !== null){
       const fbTaskEntries = Object.entries(fbTasks||{});
-      // 시드 tasks 중 Firebase에 없는 것 자동 추가
+      // 시드 tasks 중 Firebase에 없고 삭제된 적 없는 것만 자동 추가
       for(const s of SEED_TASKS){
-        if(!fbTaskEntries.find(([k])=>k===s.id)){
+        if(!deletedTaskIds.has(s.id) && !fbTaskEntries.find(([k])=>k===s.id)){
           const {id,...data}=s;
           await fbPut(`tasks/${id}`, data);
           fbTaskEntries.push([id, data]);
         }
       }
       tasks = fbTaskEntries
-        .filter(([k])=>!deletingIds.has(k))
+        .filter(([k])=>!deletingIds.has(k) && !deletedTaskIds.has(k))
         .map(([k,v])=>({id:k,...v}));
       changed = true;
     } else {
@@ -1308,16 +1315,16 @@ async function syncFromFirebase(){
 
     if(fbSchedules !== null){
       const fbSchEntries = Object.entries(fbSchedules||{});
-      // 시드 user schedules 중 Firebase에 없는 것 자동 추가
+      // 시드 user schedules 중 Firebase에 없고 삭제된 적 없는 것만 자동 추가
       for(const s of SEED_USER_SCHEDULES){
-        if(!fbSchEntries.find(([k])=>k===s.id)){
+        if(!deletedScheduleIds.has(s.id) && !fbSchEntries.find(([k])=>k===s.id)){
           const {id,...data}=s;
           await fbPut(`schedules/${id}`, data);
           fbSchEntries.push([id, data]);
         }
       }
       const userSchedules = fbSchEntries
-        .filter(([k])=>!deletingIds.has(k))
+        .filter(([k])=>!deletingIds.has(k) && !deletedScheduleIds.has(k))
         .map(([k,v])=>({id:k,...v}))
         .filter(u=>!SEED_SCHEDULES.some(s=>
           s.brand===u.brand && s.startDate===u.startDate &&
