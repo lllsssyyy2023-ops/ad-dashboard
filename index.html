@@ -540,7 +540,12 @@ function getNextBusinessDay(dstr){
   return ds(d);
 }
 
-function bc(key, media){ if(media&&media.includes('퀵윈')) return {main:'#EA580C',bg:'#FFF7ED',tx:'#9A3412'}; if(key==='전체') return {main:'#7C3AED',bg:'#EDE9FE',tx:'#4C1D95'}; return BRANDS.find(b=>b.key===key)||{main:'#888',bg:'#eee',tx:'#333'}; }
+function bc(key, media){
+  // 퀵윈: 전체브랜드면 주황, 특정 브랜드면 해당 브랜드 색 사용
+  if(media&&media.includes('퀵윈')&&key==='전체') return {main:'#EA580C',bg:'#FFF7ED',tx:'#9A3412'};
+  if(key==='전체') return {main:'#7C3AED',bg:'#EDE9FE',tx:'#4C1D95'};
+  return BRANDS.find(b=>b.key===key)||{main:'#888',bg:'#eee',tx:'#333'};
+}
 function ds(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function addDays(dstr,n){ const d=new Date(dstr+'T00:00:00'); d.setDate(d.getDate()+n); return ds(d); }
 
@@ -717,6 +722,22 @@ function getChipsForDay(dstr){
     if(!filterBrand) getRecurring(dstr).forEach(r=>{
       chips.push({ color:bc(r.brand,r.media), label:'['+r.brand+'] '+r.summary, type:'recurring', id:r.id, style:'normal' });
     });
+    // 공통 TO DO → 시작일/마감일에만 표시
+    todos.filter(t=>{
+      if(t.done) return false;
+      if(t.person!=='공통') return false;
+      const start=t.date||t.createdAt||todStr;
+      const end=t.endDate||t.date||t.createdAt||todStr;
+      return dstr===start || dstr===end;
+    }).forEach(t=>{
+      const c=t.brand?bc(t.brand):bc('전체');
+      const start=t.date||t.createdAt||todStr;
+      const end=t.endDate||t.date||t.createdAt||todStr;
+      const label=dstr===start&&dstr===end?'[공통] '+t.text
+        :dstr===start?'[공통] '+t.text+' 시작'
+        :'[공통] '+t.text+' 마감';
+      chips.push({ color:c, label, type:'todo-common', id:t.id, style:'normal' });
+    });
   }
   return chips;
 }
@@ -773,16 +794,19 @@ function mkCell(date, other, isToday){
   if(barChips.length>0){
     html+=`<div class="bar-wrap">`;
     barChips.forEach(ch=>{
-      const mn=ch.color.main;
+      const bg=ch.color.bg;   // 브검 칩과 같은 연한 배경
+      const tx=ch.color.tx;   // 브랜드 텍스트 색
+      const mn=ch.color.main; // 왼쪽 강조 보더용
       const pos=ch.barPos;
       const cls='bar-item bar-'+pos;
       const inner=(pos==='start'||pos==='solo')
-        ?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ch.label}</span>`
+        ?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${tx}">${ch.label}</span>`
         :``;
       const borderR=pos==='start'?'border-radius:4px 0 0 4px':pos==='end'?'border-radius:0 4px 4px 0':pos==='solo'?'border-radius:4px':'border-radius:0';
       const ml=pos==='start'||pos==='solo'?'margin-left:6px':'margin-left:-1px';
       const mr=pos==='end'||pos==='solo'?'margin-right:6px':'margin-right:-1px';
-      html+=`<div class="${cls}" style="background:${mn};${borderR};${ml};${mr};padding:0 5px;">${inner}</div>`;
+      const borderL=pos==='start'||pos==='solo'?`border-left:3px solid ${mn}`:`border-left:none`;
+      html+=`<div class="${cls}" style="background:${bg};${borderR};${borderL};${ml};${mr};padding:0 5px;">${inner}</div>`;
     });
     html+=`</div>`;
   }
@@ -1220,9 +1244,6 @@ async function cleanupSeedDuplicates(){
 }
 
 /* ════════════════════════════════════════
-   FIREBASE REST API 동기화
-════════════════════════════════════════ */
-/* ════════════════════════════════════════
    SEED 데이터 — Firebase 내보내기 기준
 ════════════════════════════════════════ */
 const SEED_TASKS = [
@@ -1234,44 +1255,55 @@ const SEED_TASKS = [
   {id:'-OqnVSlkiAk0VBnJyBeS',brand:'95P',media:'키검',summary:'네이버 쇼핑검색 PC 성과 감소 관련 대응 제안',content:'',due:'2026-04-22',deadline:'2026-04-22',done:true},
   {id:'-OqnVdNEDt8f_56kv_LT',brand:'오브제',media:'키검',summary:'올리브영 기획전 진행상품 입찰 상향 조정 제안',content:'액티브 스웨트프루프 선스틱',due:'2026-04-23',deadline:'2026-04-23',done:false},
   {id:'-OqnVmy6vbZQczWA--Rd',brand:'오브제',media:'키검',summary:'올리브영 기획전 진행상품 입찰 상향 조정 적용',content:'',due:'2026-04-27',deadline:'2026-04-27',done:false},
-  {id:'-Oqn_0eX1jh-_QhqkiQa',brand:'전체',media:'퀵윈',summary:'5월 퀵윈 재접수 가능',content:'',due:'2026-05-04',deadline:'2026-05-04',done:false},
+  {id:'-Oqn_0eX1jh-_QhqkiQa',brand:'전체',media:'퀵윈',summary:'5월 퀵윈 재접수 가능',content:'',due:'2026-05-04',deadline:'2026-05-04',done:true},
   {id:'-Oqn_5rXYU6UYTmVNS9f',brand:'전체',media:'퀵윈',summary:'5월 퀵윈 상향 신청 가능',content:'',due:'2026-05-15',deadline:'2026-05-15',done:false},
   {id:'-OqniaukEhgO8q8MA92n',brand:'전체',media:'브검',summary:'주간 리포트 MD 계정 추가 필요',content:'',due:'2026-04-24',deadline:'2026-04-24',done:true},
   {id:'-OqnimlIlgXQw2V0V8Wt',brand:'전체',media:'브검',summary:'광고비 충전 여부 완료 체크',content:'브검 연장해야함',due:'2026-04-24',deadline:'2026-04-24',done:true},
   {id:'-Oqo3IPG12-RoQM3uSW1',brand:'전체',media:'키검',summary:'5월 믹스 작성',content:'',due:'2026-04-24',deadline:'2026-04-24',done:true},
   {id:'-OqyE3ishPmbMVLaHIMc',brand:'스스',media:'쇼검',summary:'MD 계정 슬림벨트 딜 11시 오픈',content:'',due:'2026-04-27',deadline:'2026-04-27',done:false},
-  {id:'-OrBIB2eX05tiwjd9jQt',brand:'푸올',media:'브검',summary:'썸머페스타 소재 세팅',content:'',due:'2026-04-28',deadline:'2026-04-28',done:false},
-  {id:'-OrCjWeSWjn3ql_J3IB-',brand:'전체',media:'쇼검',summary:'MD 계정 주간 리포트 발송',content:'',due:'2026-04-29',deadline:'2026-04-29',done:false},
+  {id:'-OrBIB2eX05tiwjd9jQt',brand:'푸올',media:'브검',summary:'썸머페스타 소재 세팅',content:'',due:'2026-04-27',deadline:'2026-04-27',done:true},
+  {id:'-OrCjWeSWjn3ql_J3IB-',brand:'전체',media:'쇼검',summary:'MD 계정 주간 리포트 발송',content:'',due:'2026-04-29',deadline:'2026-04-29',done:true},
   {id:'-OrDKl4F2G23KX2jMKs-',brand:'전체',media:'키검',summary:'주간 카테고리 다른거 확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:true},
   {id:'-OrDKxj6vwLlTb_sSDR_',brand:'전체',media:'브검',summary:'보류키워드 회신',content:'',due:'2026-04-28',deadline:'2026-04-28',done:true},
-  {id:'-OrDL3t46jpc8N0SMmwD',brand:'푸올',media:'키검',summary:'레드비트URL 재수집/노출확인',content:'',due:'2026-04-28',deadline:'2026-04-28',done:true},
-  {id:'-OrHkSFQkhcoKtET1j7a',brand:'오브제',media:'키검',summary:'소재 제안',content:'오일컨트롤선스틱, 오일컨트롤피니셔 대상 제품 소구 소재 제안',due:'2026-04-29',deadline:'2026-04-29',done:false},
-  {id:'-OrHo3qfymAo6ob6BofT',brand:'전체',media:'키검',summary:'푸올/95 리그룹핑',content:'',due:'2026-04-30',deadline:'2026-04-30',done:false},
-  {id:'-OrHoQHHLB0ErD7F6NTU',brand:'전체',media:'브검',summary:'에이페 연장',content:'충전후',due:'2026-04-30',deadline:'2026-04-30',done:false},
+  {id:'-OrHkSFQkhcoKtET1j7a',brand:'오브제',media:'키검',summary:'소재 제안',content:'아래 첨부드린 이미지와 같이 해당 관련 제품 그룹 확인시, 소재 내 해당 제품 관련소재가 아닌 공통 적인 내용을 모두 포함할수있는 범용 소재로 노출됨을 확인하였습니다.\n      이와 관련하여 여름시즌 진입하며 오일컨트롤 관련 제품 수요 증가할것으로 예상되어 CTR 개선 목표의 해당 관련 제품들 범용소재가 아닌 각 제품에 포커스되어있는 제품 소구 소재 제안드립니다.\n      관련하여 금주중 정리하여 별도 제안 드리도록 하겠습니다. [오일컨트롤선스틱], [오일컨트롤피니셔] 대상 제안 예정',due:'2026-04-29',deadline:'2026-04-29',done:true},
+  {id:'-OrNMmmyHa3IRIGOm6ia',brand:'에이페',media:'브검',summary:'계약연장',content:'충전되면',due:'2026-04-30',deadline:'2026-04-30',done:true},
 ];
 
 const SEED_USER_SCHEDULES = [
   {id:'-Oqj_GF1sR7hwNwtop0L',brand:'오브제',media:'브검',type:'소재교체',summary:'썸3 포켓몬선스틱 노출 예정',content:'썸3 포켓몬선스틱 노출 예정',startDate:'2026-05-01',endDate:'2026-05-31',done:false},
-  {id:'-OqmYExuMxySLHjwmEfv',brand:'푸올',media:'브검',type:'소재교체',summary:'올영소재교체',content:'키티 OFF, 상시 ON',startDate:'2026-04-30',endDate:'2026-05-01',done:false},
-  {id:'-OqnRfQETwovoUL20pUZ',brand:'풀리',media:'퀵윈',type:'집행',summary:'14시 타임보드',content:'14시 타임보드',startDate:'2026-05-07',endDate:'2026-05-07',done:false},
+  {id:'-OqmYExuMxySLHjwmEfv',brand:'푸올',media:'브검',type:'소재교체',summary:'올영소재교체',content:'키티 OFF, 상시 ON',startDate:'2026-04-30',endDate:'2026-05-01',done:true},
+  {id:'-OqnRfQETwovoUL20pUZ',brand:'풀리',media:'퀵윈',type:'집행',summary:'14시 타임보드',content:'14시 타임보드',startDate:'2026-05-07',endDate:'2026-05-07',done:true},
   {id:'-OqnVv60xMr6eG0vSv5A',brand:'오브제',media:'브검',type:'소재교체',summary:'[오브제] 올영 온라인 기획전 / 봄맞이 스킨케어 포어제로 브랜드위크',content:'',startDate:'2026-04-13',endDate:'2026-04-20',done:false},
   {id:'-OqnW7qcOJXHhDaT5RVO',brand:'오브제',media:'브검',type:'소재교체',summary:'올리브영 액티브 선스틱 기획전 노출',content:'',startDate:'2026-04-27',endDate:'2026-04-30',done:false},
   {id:'-OrDPaCL7xti2k8GKlJc',brand:'풀리',media:'브검',type:'계약',summary:'브검 연장계약',content:'',startDate:'2026-04-28',endDate:'2026-04-28',done:false},
+  {id:'-OrwGKNntQtXJxRj7FRU',brand:'푸올',media:'퀵윈',type:'집행',summary:'16시 타임보드',content:'',startDate:'2026-05-11',endDate:'2026-05-11',done:false},
+  {id:'-OrwGYQcAGqvf6T69JrL',brand:'95P',media:'퀵윈',type:'집행',summary:'17시 타임보드',content:'',startDate:'2026-05-13',endDate:'2026-05-13',done:false},
+  {id:'-OrwGeBRkYBN6cCPoXv_',brand:'푸올',media:'퀵윈',type:'집행',summary:'11시 타임보드',content:'',startDate:'2026-05-18',endDate:'2026-05-18',done:false},
+  {id:'-OrwGut1TJfCtgRHtp0O',brand:'에이페',media:'퀵윈',type:'집행',summary:'퀵윈 5/18~24 스마트채널',content:'',startDate:'2026-05-18',endDate:'2026-05-24',done:false},
+  {id:'-OrwGypy4uS7IucnoWoo',brand:'에이페',media:'퀵윈',type:'집행',summary:'퀵윈 5/18~24 브랜딩DA',content:'',startDate:'2026-05-18',endDate:'2026-05-24',done:false},
+  {id:'-Os0NgqJtzwOxZUePAth',brand:'전체',media:'퀵윈',type:'계약',summary:'퀵윈 상향 조정 기간',content:'',startDate:'2026-05-11',endDate:'2026-05-14',done:false},
 ];
 
 const SEED_TODOS = [
-  {id:'-Oqsz4Ev07D83sLgPf-Y',person:'이세영',text:'GFA 애드부스트 애셋 분리 성과',brand:'푸올',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-04-29',createdAt:'2026-04-23'},
   {id:'-OqtgzgtodXX95Eo5oIW',person:'오승미',text:'브검 쿼리 모니터링 파일 만들기',brand:'전체',due:'',done:false,doneAt:null,date:'2026-04-24',endDate:'2026-04-24',createdAt:'2026-04-23'},
   {id:'-OqtkAf-azi_eUNohN6h',person:'이세영',text:'브랜드 별 6월 목표 설정',brand:'전체',due:'',done:false,doneAt:null,date:'2026-05-20',endDate:'2026-05-20',createdAt:'2026-04-23'},
   {id:'-OrCJJj4sBP0tv_2RQtw',person:'이세영',text:'브검 독스 생성 필요',brand:'',due:'',done:false,doneAt:null,date:'2026-04-27',endDate:'2026-04-27',createdAt:'2026-04-27'},
   {id:'-OrHLZEyU0rHw1_aifiH',person:'이세영',text:'GFA RD 오류 발견되어 현서프로님 확인 중',brand:'전체',due:'',done:false,doneAt:null,date:'2026-04-28',endDate:'2026-04-28',createdAt:'2026-04-28'},
-  {id:'-OrHM9BiV-tx7s6oQ5c-',person:'모다은',text:'95 신규 브랜드검색 소재 전달 예정 - 세팅',brand:'95P',due:'',done:false,doneAt:null,date:'2026-05-04',endDate:'2026-05-04',createdAt:'2026-04-28'},
-  {id:'-OrHOjTrqAWxlxLhrxBA',person:'이세영',text:'푸올 브검 재제안_2차',brand:'',due:'',done:false,doneAt:null,date:'2026-04-28',endDate:'2026-04-28',createdAt:'2026-04-28'},
-  {id:'-OrHOnFlzVHjv7Sbzir3',person:'황유경',text:'푸올 계정 리그룹핑',brand:'',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-04-29',createdAt:'2026-04-28'},
   {id:'-OrHOqjQSqDwSK96x9I5',person:'모다은',text:'95 계정 리그룹핑',brand:'',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-04-29',createdAt:'2026-04-28'},
-  {id:'-OrHP6q7tvKyuvqH13oh',person:'황유경',text:'에이페 브검 재계약',brand:'어댑트',due:'',done:false,doneAt:null,date:'2026-04-28',endDate:'2026-04-28',createdAt:'2026-04-28'},
   {id:'-OrIJj9Vi0Kf3Fk5dGFs',person:'모다은',text:'풀리 예싼 증액건 관련 제안',brand:'풀리',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-04-29',createdAt:'2026-04-28'},
   {id:'-OrIJrvNvGelYYPI272d',person:'모다은',text:'브검 세팅 확인',brand:'오브제',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-04-29',createdAt:'2026-04-28'},
+  {id:'-OrNGWoV_uoyyExn27yu',person:'오승미',text:'중복키워드 성과 정리',brand:'',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-04-29',createdAt:'2026-04-29'},
+  {id:'-OrNKbYboVjiDCNI0Qxj',person:'공통',text:'풀리/에이페/8PAM/듀오렉신  쇼검+키검 리그룹핑 제안 던지기',brand:'',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-05-15',createdAt:'2026-04-29'},
+  {id:'-OrNKyStZVNkUGgJBQZ5',person:'공통',text:'푸올/95/오브제 쇼검+키검 리그룹핑 제안',brand:'전체',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-05-08',createdAt:'2026-04-29'},
+  {id:'-OrNLpyOO1svO07qFfU1',person:'공통',text:'GFA 부스트업 캠페인 생성',brand:'전체',due:'',done:false,doneAt:null,date:'2026-05-27',endDate:'2026-05-27',createdAt:'2026-04-29'},
+  {id:'-OrQxP3bJw-elj1JwGiY',person:'황유경',text:'에이페 브검 30일 연장',brand:'에이페',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-04-30'},
+  {id:'-OrRi0LJ9Ebc722-2gzx',person:'오승미',text:'95 쇼핌검색 현황 정리',brand:'',due:'',done:false,doneAt:null,date:'2026-04-30',endDate:'2026-04-30',createdAt:'2026-04-30'},
+  {id:'-OrRi2yJMFe1kJLhmPMt',person:'오승미',text:'등록내용 0430일자 업데이트',brand:'',due:'',done:false,doneAt:null,date:'2026-04-30',endDate:'2026-04-30',createdAt:'2026-04-30'},
+  {id:'-OrkPfcZAVxTvaVJpKbp',person:'오승미',text:'브랜드별 타겟팅 정리',brand:'',due:'',done:false,doneAt:null,date:'2026-05-04',endDate:'2026-05-04',createdAt:'2026-05-04'},
+  {id:'-OrkPuardMbBtKjTktum',person:'오승미',text:'대시보드용 검색어 RAW 재점검',brand:'',due:'',done:false,doneAt:null,date:'2026-05-04',endDate:'2026-05-04',createdAt:'2026-05-04'},
+  {id:'-OruzlWKYvXLW_SOb8kx',person:'황유경',text:'브검 충전금액 확인',brand:'',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-05-06'},
+  {id:'-OrwW_6Wxh0FJsYayCwM',person:'황유경',text:'푸올 브검 연장',brand:'푸올',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-05-06'},
+  {id:'-OrwWfx4tIEd2Zhod--c',person:'황유경',text:'듀오렉신 브검 연장',brand:'듀오렉신',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-05-06'},
 ];
 
 async function syncFromFirebase(){
