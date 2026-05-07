@@ -78,7 +78,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);colo
 .chip-dl{background:#FEF9C3;color:#713F12;border-left:2px solid #EAB308}
 .chip-more{font-size:clamp(8px,.7vw,11px);color:var(--tx3)}
 /* ── Expiry Summary Bar ── */
-.expiry-bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(130px,13vw,200px),1fr));gap:8px;margin-bottom:clamp(4px,.5vh,8px);flex-shrink:0}
+
 .exp-card{background:#fff;border-radius:var(--r);border:1px solid var(--bdr);padding:clamp(8px,.9vh,13px) clamp(10px,1vw,16px);display:flex;align-items:center;gap:10px;min-width:0;box-shadow:var(--sh)}
 .exp-card-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .exp-card-body{flex:1;min-width:0}
@@ -196,7 +196,7 @@ textarea.fc{min-height:64px;resize:vertical}
     </div>
   </div>
   <div class="legend" id="legend"></div>
-  <div id="expiry-bar" class="expiry-bar" style="display:none;flex-shrink:0"></div>
+
   <div class="cal-tab-wrap">
     <button class="cal-tab-btn on" id="caltab-schedule" onclick="swCalTab('schedule')">📋 브검/퀵윈/소재</button>
     <button class="cal-tab-btn" id="caltab-todo" onclick="swCalTab('todo')">✅ TO DO</button>
@@ -867,7 +867,6 @@ function swCalTab(t){
     document.getElementById('caltab-'+x).classList.toggle('on',x===t);
   });
   renderCal();
-  renderExpiryBar();
 }
 
 function swTab(t){
@@ -1081,7 +1080,6 @@ function deleteItem(type,id){
 function ra(){
   renderCal();
   const d=new Date(selDay+'T00:00:00'); renderPanel(d);
-  renderExpiryBar();
 }
 
 /* ════════════════════════════════════════
@@ -1373,8 +1371,7 @@ async function syncFromFirebase(){
     if(changed){
       saveLocal();
       renderCal();
-      renderExpiryBar();
-      if(curTab==='todo') renderTodo();
+          if(curTab==='todo') renderTodo();
       const d=new Date(selDay+'T00:00:00'); renderPanel(d);
   // todos도 동기화
   loadTodos();
