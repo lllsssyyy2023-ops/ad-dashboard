@@ -223,16 +223,21 @@ textarea.fc{min-height:64px;resize:vertical}
   </div>
   <div id="pane-chk" style="flex:1;overflow-y:auto"></div>
   <div id="pane-todo" style="display:none;flex:1;overflow-y:auto"></div>
-  <!-- 오늘의 운세 -->
-  <div id="fortune-box" style="flex-shrink:0;margin-top:auto;padding-top:10px;border-top:1px solid var(--bdr)">
+  <!-- 📝 팀 공유 메모장 -->
+  <div style="flex-shrink:0;margin-top:auto;padding-top:10px;border-top:1px solid var(--bdr)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:clamp(9px,.8vw,12px);font-weight:700;color:var(--tx3);letter-spacing:.05em;text-transform:uppercase">🔮 오늘의 운세</div>
-      <div id="fortune-person" style="font-size:clamp(9px,.8vw,11px);color:var(--tx3)"></div>
+      <div style="font-size:clamp(9px,.8vw,12px);font-weight:700;color:#7B6B3A">📝 팀 메모장</div>
+      <span id="memo-status" style="font-size:10px;color:#A89850"></span>
     </div>
-    <div id="fortune-content" style="font-size:clamp(10px,.9vw,13px);color:var(--tx);line-height:1.6;background:var(--sur2);border-radius:var(--r);padding:clamp(8px,.8vh,12px);min-height:60px">
-      <span style="color:var(--tx3)">✨ 운세를 불러오는 중...</span>
+    <div style="background:#FFFEF0;border:1.5px solid #E5D98A;border-radius:10px;padding:10px 12px;box-shadow:2px 3px 10px rgba(0,0,0,.06)">
+      <textarea id="memo-text" placeholder="주말만 보고 버틴다 🫠"
+        style="width:100%;min-height:90px;border:none;background:transparent;resize:none;font-size:clamp(10px,.88vw,12px);line-height:1.9;color:#4A3F2A;font-family:inherit;outline:none;box-sizing:border-box"
+        oninput="saveMemoDebounce()"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:6px;border-top:1px dashed #E5D98A">
+        <span style="font-size:10px;color:#C8B870">✏️ 누구나 수정 가능</span>
+        <button onclick="clearMemo()" style="font-size:10px;color:#C09050;background:none;border:none;cursor:pointer;font-family:inherit;padding:0">전체 지우기</button>
+      </div>
     </div>
-    <button class="btn" style="width:100%;margin-top:6px;font-size:clamp(8px,.75vw,11px)" onclick="nextFortunePerson()">다음 사람 → <span id="fortune-next-name"></span></button>
   </div>
 </div>
 </div>
@@ -249,6 +254,7 @@ textarea.fc{min-height:64px;resize:vertical}
       <option value="황유경">황유경</option>
       <option value="모다은">모다은</option>
       <option value="오승미">오승미</option>
+      <option value="심세은">심세은</option>
     </select>
   </div>
   <div class="fg"><label>할 일</label>
@@ -288,6 +294,7 @@ textarea.fc{min-height:64px;resize:vertical}
       <option value="황유경">황유경</option>
       <option value="모다은">모다은</option>
       <option value="오승미">오승미</option>
+      <option value="심세은">심세은</option>
     </select>
   </div>
   <div class="fg"><label>할 일</label>
@@ -1294,14 +1301,18 @@ const SEED_TODOS = [
   {id:'-OrNKbYboVjiDCNI0Qxj',person:'공통',text:'풀리/에이페/8PAM/듀오렉신  쇼검+키검 리그룹핑 제안 던지기',brand:'',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-05-15',createdAt:'2026-04-29'},
   {id:'-OrNKyStZVNkUGgJBQZ5',person:'공통',text:'푸올/95/오브제 쇼검+키검 리그룹핑 제안',brand:'전체',due:'',done:false,doneAt:null,date:'2026-04-29',endDate:'2026-05-08',createdAt:'2026-04-29'},
   {id:'-OrNLpyOO1svO07qFfU1',person:'공통',text:'GFA 부스트업 캠페인 생성',brand:'전체',due:'',done:false,doneAt:null,date:'2026-05-27',endDate:'2026-05-27',createdAt:'2026-04-29'},
-  {id:'-OrQxP3bJw-elj1JwGiY',person:'황유경',text:'에이페 브검 30일 연장',brand:'에이페',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-04-30'},
   {id:'-OrRi0LJ9Ebc722-2gzx',person:'오승미',text:'95 쇼핌검색 현황 정리',brand:'',due:'',done:false,doneAt:null,date:'2026-04-30',endDate:'2026-04-30',createdAt:'2026-04-30'},
   {id:'-OrRi2yJMFe1kJLhmPMt',person:'오승미',text:'등록내용 0430일자 업데이트',brand:'',due:'',done:false,doneAt:null,date:'2026-04-30',endDate:'2026-04-30',createdAt:'2026-04-30'},
   {id:'-OrkPfcZAVxTvaVJpKbp',person:'오승미',text:'브랜드별 타겟팅 정리',brand:'',due:'',done:false,doneAt:null,date:'2026-05-04',endDate:'2026-05-04',createdAt:'2026-05-04'},
   {id:'-OrkPuardMbBtKjTktum',person:'오승미',text:'대시보드용 검색어 RAW 재점검',brand:'',due:'',done:false,doneAt:null,date:'2026-05-04',endDate:'2026-05-04',createdAt:'2026-05-04'},
-  {id:'-OruzlWKYvXLW_SOb8kx',person:'황유경',text:'브검 충전금액 확인',brand:'',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-05-06'},
   {id:'-OrwW_6Wxh0FJsYayCwM',person:'황유경',text:'푸올 브검 연장',brand:'푸올',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-05-06'},
-  {id:'-OrwWfx4tIEd2Zhod--c',person:'황유경',text:'듀오렉신 브검 연장',brand:'듀오렉신',due:'',done:false,doneAt:null,date:'2026-05-08',endDate:'2026-05-08',createdAt:'2026-05-06'},
+  {id:'-Os5NxGG2aXnZX3-bDTD',person:'황유경',text:'에이페 7/4부터 새계약 - 노출확인',brand:'에이페',due:'',done:false,doneAt:null,date:'2026-07-03',endDate:'2026-07-03',createdAt:'2026-05-08'},
+  {id:'-OsKYCz24zm1xaerBYr-',person:'이세영',text:'푸올 브검 리그룹핑',brand:'푸올',due:'',done:false,doneAt:null,date:'2026-05-11',endDate:'2026-05-11',createdAt:'2026-05-11'},
+  {id:'-OsLeprQUA42SkrPS6i9',person:'황유경',text:'연결URL 수집상태 확인',brand:'8APM',due:'',done:false,doneAt:null,date:'2026-05-13',endDate:'2026-05-13',createdAt:'2026-05-11'},
+  {id:'-OsOpNxdPpaZB_XioCHO',person:'이세영',text:'MD 주간 보고서 키검 채우기',brand:'전체',due:'',done:false,doneAt:null,date:'2026-05-12',endDate:'2026-05-12',createdAt:'2026-05-12'},
+  {id:'-OsOpQdKFsMLX7VHNQUz',person:'이세영',text:'푸올 리그룹핑 키검',brand:'푸올',due:'',done:false,doneAt:null,date:'2026-05-12',endDate:'2026-05-12',createdAt:'2026-05-12'},
+  {id:'-OsOpU50RBdOFbWnBjGM',person:'오승미',text:'퀵윈 리포트',brand:'',due:'',done:false,doneAt:null,date:'2026-05-14',endDate:'2026-05-14',createdAt:'2026-05-12'},
+  {id:'-OsQ_qs0Pb3kWpxCQgvZ',person:'황유경',text:'주간리포트 코멘트 확인+적용',brand:'',due:'',done:false,doneAt:null,date:'2026-05-13',endDate:'2026-05-13',createdAt:'2026-05-12'},
 ];
 
 async function syncFromFirebase(){
@@ -1478,7 +1489,7 @@ function renderExpiryBar(){
 /* ════════════════════════════════════════
    TO DO 리스트
 ════════════════════════════════════════ */
-const MEMBERS=['이경미','이세영','황유경','모다은','오승미'];
+const MEMBERS=['이경미','이세영','황유경','모다은','오승미','심세은'];
 let todos=[]; // {id, person, text, brand, due, priority, done}
 
 /* Firebase 연동 */
@@ -1744,173 +1755,38 @@ function makeTodoSection(title, person, items){
 }
 
 /* ════════════════════════════════════════
-   오늘의 운세 (Claude API)
+   팀 공유 메모장
 ════════════════════════════════════════ */
-const TEAM = [
-  { name:'이경미', birth:'1989-07-30' },
-  { name:'이세영', birth:'1994-09-08' },
-  { name:'황유경', birth:'1997-02-22' },
-  { name:'모다은',  birth:'1997-03-17' },
-  { name:'오승미',  birth:'2002-10-21' },
-];
+let memoTimer = null;
 
-let fortuneIdx = new Date().getDate() % TEAM.length;
-
-/* ── 사주/오행 기반 운세 시스템 ── */
-function seededRand(seed){
-  let s=seed;
-  return ()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
-}
-function pickIdx(arr, rng){ return arr[Math.floor(rng()*arr.length)]; }
-
-/* 천간(天干) */
-const CHEONGAN=['갑','을','병','정','무','기','경','신','임','계'];
-const CHEONGAN_ELEM=['목','목','화','화','토','토','금','금','수','수'];
-const CHEONGAN_ENERGY=['새로운 시작과 성장','부드러운 유연함','열정과 활력','따뜻한 빛','안정과 신뢰','배려와 조화','결단력과 추진력','세련된 감각','지혜와 흐름','깊은 통찰'];
-
-/* 지지(地支) */
-const JIJI=['자','축','인','묘','진','사','오','미','신','유','술','해'];
-const JIJI_ELEM=['수','토','목','목','토','화','화','토','금','금','토','수'];
-const JIJI_ANIMAL=['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
-
-/* 오행 기운 조합 */
-const OHAENG_DESC={
-  '목':'창의력과 성장의 기운이 강해요. 새로운 시도를 두려워하지 마세요.',
-  '화':'열정과 표현의 기운이 넘치는 날이에요. 적극적으로 나서면 주목받아요.',
-  '토':'안정과 신뢰의 기운이 강해요. 꾸준함이 빛을 발하는 하루예요.',
-  '금':'결단력과 집중력이 높아지는 날이에요. 중요한 결정을 내리기 좋아요.',
-  '수':'지혜와 유연함의 기운이 흘러요. 직관을 따르면 좋은 결과가 따라와요.',
-};
-
-/* 오행 조화/충돌 */
-const OHAENG_HARMONY={
-  '목화':true,'화토':true,'토금':true,'금수':true,'수목':true,
-  '화목':true,'토화':true,'금토':true,'수금':true,'목수':true,
-};
-
-function getCheongan(dateStr){
-  // 1984-02-02 = 갑자년 기준 천간 계산
-  const base=new Date('1984-02-02');
-  const d=new Date(dateStr+'T00:00:00');
-  const diff=Math.floor((d-base)/(86400000));
-  return CHEONGAN[((diff%10)+10)%10];
-}
-function getJiji(dateStr){
-  const base=new Date('1984-02-02');
-  const d=new Date(dateStr+'T00:00:00');
-  const diff=Math.floor((d-base)/(86400000));
-  return JIJI[((diff%12)+12)%12];
-}
-function getBirthElem(birth){
-  if(!birth) return '토';
-  const year=parseInt(birth.slice(0,4));
-  return CHEONGAN_ELEM[((year-4)%10+10)%10];
-}
-function getDayElem(dateStr){
-  const cg=getCheongan(dateStr);
-  return CHEONGAN_ELEM[CHEONGAN.indexOf(cg)];
+async function loadMemo(){
+  const ta = document.getElementById('memo-text');
+  if(!ta) return;
+  const data = await fbGet('memo/shared');
+  ta.value = data?.text || '';
 }
 
-const F_WORK=[
-  '오늘은 집중력이 높아 복잡한 업무도 빠르게 처리할 수 있는 날이에요.',
-  '아이디어가 샘솟는 하루! 미뤄뒀던 기획을 시작하기 좋은 타이밍이에요.',
-  '꼼꼼함이 빛을 발하는 날로, 세부 사항을 점검하면 좋은 결과가 따라와요.',
-  '협업 능력이 돋보이는 하루예요. 팀과 함께라면 어떤 과제도 거뜬히 해낼 수 있어요.',
-  '오늘은 속도보다 정확성이 중요한 날이에요. 한 번 더 확인하는 습관이 빛납니다.',
-  '창의적인 발상이 돋보이는 날이에요. 새로운 접근 방식을 시도해 보세요.',
-  '업무 흐름이 원활한 하루로, 처리해야 할 일들이 자연스럽게 풀려나갈 거예요.',
-  '오늘은 우선순위를 정리하면 효율이 두 배가 되는 날이에요.',
-  '준비해온 것들이 빛을 발하는 날이에요. 자신 있게 밀어붙여 보세요.',
-  '작은 실수도 성장의 발판이 되는 하루예요. 너무 자책하지 마세요.',
-  '오늘은 멀티태스킹보다 한 가지에 집중하는 것이 훨씬 효과적이에요.',
-  '새로운 방법을 시도하면 예상보다 좋은 결과가 나오는 날이에요.',
-  '오늘은 보고나 제안 타이밍이 좋아요. 망설이지 말고 의견을 내보세요.',
-  '집중이 잘 되는 날이에요. 까다로운 업무를 오전에 처리하면 오후가 가벼워져요.',
-  '꾸준히 해온 노력이 수치로 증명되는 날이에요. 데이터를 다시 한번 확인해 보세요.',
-];
-const F_PEOPLE=[
-  '주변 사람들과의 소통이 원활해지는 날이에요. 솔직한 대화가 관계를 더 깊게 만들어요.',
-  '따뜻한 한마디가 큰 힘이 되는 날이에요. 주변에 칭찬을 아끼지 마세요.',
-  '오늘은 경청이 최고의 무기예요. 상대방의 말을 잘 들어주면 신뢰가 쌓여요.',
-  '가까운 동료에게 작은 관심을 표현해 보세요. 뜻밖의 좋은 인연이 깊어질 수 있어요.',
-  '팀의 분위기를 이끄는 에너지가 넘치는 날이에요. 자연스럽게 중심이 될 수 있어요.',
-  '오해가 풀리기 좋은 날이에요. 용기 내어 먼저 다가가면 좋은 결과가 있을 거예요.',
-  '오늘은 유머 감각이 빛나는 날이에요. 가벼운 농담 한마디가 분위기를 살릴 거예요.',
-  '신뢰가 쌓이는 하루예요. 작은 약속도 꼭 지키면 관계가 단단해져요.',
-  '오늘 누군가에게 먼저 연락해보세요. 반가운 소식이 돌아올 수 있어요.',
-  '팀워크가 빛을 발하는 날이에요. 혼자보다 함께할 때 훨씬 좋은 결과가 나와요.',
-  '오늘은 상대방의 입장에서 생각해보면 막혔던 문제가 술술 풀려요.',
-  '진심 어린 피드백을 주고받기 좋은 날이에요. 솔직함이 성장을 만들어요.',
-];
-const F_GENERAL=[
-  '오늘 하루는 작은 것에서 큰 기쁨을 찾을 수 있어요. 순간순간을 즐겨보세요 ☀️',
-  '에너지가 넘치는 날이에요. 도전하고 싶은 일이 있다면 오늘이 바로 그날이에요 ✨',
-  '마음의 여유를 가지면 모든 일이 잘 풀리는 날이에요. 잠깐 숨 고르기도 좋아요 🌿',
-  '긍정적인 마인드가 행운을 불러오는 하루예요. 좋은 일이 기다리고 있어요 🍀',
-  '오늘은 직감을 믿어보세요. 느낌대로 움직이면 좋은 선택을 하게 될 거예요 🌟',
-  '꾸준히 해온 노력이 인정받는 날이에요. 스스로를 충분히 칭찬해 주세요 💪',
-  '뜻밖의 기쁜 소식이 찾아올 수 있는 날이에요. 열린 마음으로 하루를 시작해요 🎉',
-  '오늘 하루 마무리가 아름다울 것 같아요. 저녁에 좋아하는 것으로 스스로에게 선물해보세요 🌙',
-  '작은 성취에도 충분히 기뻐하는 하루가 되길 바라요. 모든 걸음이 의미 있어요 🌈',
-  '오늘은 새로운 것을 배우기 딱 좋은 날이에요. 호기심을 마음껏 펼쳐보세요 📚',
-  '잠시 멈추고 주변을 둘러보세요. 놓쳤던 소중한 것들이 보일 거예요 🔍',
-  '오늘의 작은 결정이 큰 변화를 만들 수 있어요. 신중하게, 하지만 용기 있게 선택해보세요 🎯',
-  '스트레스보다 즐거움에 집중하는 날이에요. 웃음이 최고의 에너지예요 😊',
-  '오늘은 계획대로 흘러가는 날이에요. 준비한 대로 차분히 실행해보세요 📋',
-  '예상치 못한 기회가 찾아올 수 있어요. 유연하게 대처하면 큰 행운이 돼요 🎁',
-];
-const F_LUCKY=[
-  '행운의 색상은 파란색, 행운의 숫자는 7이에요.',
-  '행운의 아이템은 작은 메모지예요. 아이디어를 바로 적어두세요.',
-  '행운의 시간대는 오전 10시~12시예요. 중요한 일은 이 시간에 처리해 보세요.',
-  '행운의 음식은 따뜻한 음료예요. 커피 한 잔이 오늘의 활력이 될 거예요.',
-  '행운의 색상은 초록색이에요. 자연에서 영감을 받아보세요.',
-  '행운의 숫자는 3이에요. 세 번 생각하면 최선의 답이 나와요.',
-  '행운의 방향은 남쪽이에요. 오늘 점심은 사무실 남쪽 방향으로 나가보세요.',
-  '행운의 아이템은 펜이에요. 손으로 직접 적으면 아이디어가 더 잘 떠올라요.',
-  '행운의 색상은 노란색이에요. 작은 노란색 소품이 기분을 밝게 해줄 거예요.',
-  '행운의 숫자는 8이에요. 8번째 선택이 가장 좋은 결과를 가져올 거예요.',
-  '행운의 시간은 오후 2~4시예요. 이 시간에 중요한 연락을 해보세요.',
-  '행운의 음식은 과일이에요. 달콤한 것 하나로 오늘의 에너지를 채워보세요.',
-];
-
-function generateFortune(person, dateStr){
-  const cgIdx=CHEONGAN.indexOf(getCheongan(dateStr));
-  const jijiIdx=JIJI.indexOf(getJiji(dateStr));
-  const dayElem=CHEONGAN_ELEM[cgIdx];
-  const dayAnimal=JIJI_ANIMAL[jijiIdx];
-  const dayEnergy=CHEONGAN_ENERGY[cgIdx];
-  const birthElem=getBirthElem(person.birth);
-  const harmony=OHAENG_HARMONY[birthElem+dayElem]||OHAENG_HARMONY[dayElem+birthElem];
-  const harmonyTxt=harmony
-    ? '['+dayElem+' 기운] 오늘의 '+dayElem+' 기운이 당신의 '+birthElem+' 기운과 잘 어우러져요. ✨'
-    : '['+dayElem+' 기운] 오늘의 '+dayElem+' 기운이 만나 긴장감을 만들어요. 신중하게 행동하면 오히려 기회가 돼요.';
-  const dateSeed=parseInt(dateStr.replace(/-/g,''));
-  const birthSeed=person.birth?parseInt(person.birth.replace(/-/g,'')):19900101;
-  const seed=(dateSeed*31+birthSeed*7)>>>0;
-  const rng=seededRand(seed);
-  const w=pickIdx(F_WORK,rng);
-  const p=pickIdx(F_PEOPLE,rng);
-  const l=pickIdx(F_LUCKY,rng);
-  const line1='['+CHEONGAN[cgIdx]+JIJI[jijiIdx]+'일 '+dayAnimal+'의 날] '+dayEnergy+'의 하루예요.';
-  return [line1, harmonyTxt, '[업무] '+w, '[대인] '+p, '[행운] '+l].join('\n');
-}
-function nextFortunePerson(){
-  fortuneIdx=(fortuneIdx+1)%TEAM.length;
-  loadFortune();
+function saveMemoDebounce(){
+  clearTimeout(memoTimer);
+  const st = document.getElementById('memo-status');
+  if(st) st.textContent = '저장 중...';
+  memoTimer = setTimeout(saveMemo, 800);
 }
 
-function loadFortune(){
-  const person=TEAM[fortuneIdx];
-  const next=TEAM[(fortuneIdx+1)%TEAM.length];
-  document.getElementById('fortune-person').textContent=`${person.name}`;
-  const nextEl=document.getElementById('fortune-next-name');
-  if(nextEl) nextEl.textContent=next.name;
-  const text=generateFortune(person, todStr);
-  const el=document.getElementById('fortune-content');
-  el.style.whiteSpace='pre-line';
-  el.style.fontSize='clamp(9px,.82vw,12px)';
-  el.textContent=text;
+async function saveMemo(){
+  const text = document.getElementById('memo-text')?.value || '';
+  const st = document.getElementById('memo-status');
+  await fbPatch('memo/shared', {text, updatedAt: todStr});
+  if(st){ st.textContent = '저장됨 ✓'; setTimeout(()=>{ st.textContent=''; }, 1500); }
+}
+
+async function clearMemo(){
+  if(!confirm('메모를 전체 삭제할까요?')) return;
+  const ta = document.getElementById('memo-text');
+  if(ta) ta.value = '';
+  await fbPatch('memo/shared', {text:'', updatedAt: todStr});
+  const st = document.getElementById('memo-status');
+  if(st){ st.textContent = '삭제됨'; setTimeout(()=>{ st.textContent=''; }, 1200); }
 }
 
 /* ════════════════════════════════════════
@@ -1920,36 +1796,28 @@ function initResizer(){
   const resizer=document.getElementById('resizer');
   const colR=document.getElementById('col-r');
   if(!resizer||!colR) return;
-
   let startX, startW;
-
   resizer.addEventListener('mousedown', e=>{
-    startX=e.clientX;
-    startW=colR.offsetWidth;
+    startX=e.clientX; startW=colR.offsetWidth;
     resizer.classList.add('dragging');
     document.body.style.cursor='col-resize';
     document.body.style.userSelect='none';
-
     function onMove(e){
-      const dx=startX-e.clientX; // 왼쪽으로 드래그 = 패널 넓어짐
-      const newW=Math.min(600, Math.max(220, startW+dx));
+      const newW=Math.min(600,Math.max(220,startW+(startX-e.clientX)));
       colR.style.width=newW+'px';
-      // 너비 저장
-      try{ localStorage.setItem('panel_width', newW); }catch(e){}
+      try{ localStorage.setItem('panel_width',newW); }catch(e){}
     }
     function onUp(){
       resizer.classList.remove('dragging');
       document.body.style.cursor='';
       document.body.style.userSelect='';
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
     }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
     e.preventDefault();
   });
-
-  // 저장된 너비 복원
   try{
     const saved=localStorage.getItem('panel_width');
     if(saved) colR.style.width=saved+'px';
@@ -1972,7 +1840,7 @@ function init(){
   initResizer();
   cleanupSeedDuplicates().then(()=>syncFromFirebase()); // 중복 정리 후 동기화
   setInterval(syncFromFirebase, 30000);        // 30초마다 자동 동기화
-  loadFortune();
+  loadMemo();
   loadTodos();
 }
 init();
